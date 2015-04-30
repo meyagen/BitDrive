@@ -39,6 +39,8 @@ void list(){
 	else {
 		printf("There are no files available for download.\n");		
 	}
+
+	free(dir);
 }
 
 int upload(){
