@@ -3,11 +3,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <dirent.h> 
+#include <unistd.h> 
 #include <sys/stat.h>
 
-typedef enum {UPLOAD, DOWNLOAD, LIST, QUIT} server_options;
-struct stat file_stats;
+typedef enum {LIST, UPLOAD, DOWNLOAD, DELETE, QUIT} server_options;
 server_options option;
+struct stat file_stats;
 
 char *input;
 bool loop = true;
@@ -18,6 +19,27 @@ void get_input(){
 	scanf("%s", input);	
 }
 
+void list(){
+	DIR *dir;
+	struct dirent *ent;
+	dir = opendir(".");
+
+	if(dir){
+		printf("Here are the list of files:\n");
+		printf("----------------------------------------------");	
+		while((ent = readdir(dir)) != NULL){
+			if(ent->d_type != 4){
+				stat(ent->d_name, &file_stats);
+				printf("\n%s (%lld bytes)", ent->d_name, (long long)file_stats.st_size);
+			}
+		}
+		printf("\n----------------------------------------------\n\n");	
+	}
+
+	else {
+		printf("There are no files available for download.\n");		
+	}
+}
 
 int upload(){
 	printf("What file would you like to upload?\n");
@@ -35,30 +57,19 @@ int download(){
 	return 0;
 }
 
-int list(){
-	DIR *dir;
-	struct dirent *ent;
-	char* path;
-	path = ".";
-	dir = opendir(path);
+int delete(){
+	printf("What file would you like to delete?\n");
+	get_input();
 
-	if(dir){
-		printf("Here are the list of files:\n");
-		printf("----------------------------------------------");	
-		while((ent = readdir(dir)) != NULL){
-			if(ent->d_type != 4){
-					if(!stat(ent->d_name, &file_stats)){
-						printf("\n%s (%lld bytes)", ent->d_name, (long long)file_stats.st_size);
-				}
-			}
-		}
-		printf("\n----------------------------------------------\n\n");	
+	if(remove(input) == 0){
+		printf("File deleted successfully!\n");
 	}
 
 	else {
-		printf("There are no files available for download.\n");		
+		printf("There was a problem with deleting the file. Perhaps it is being used by another application. Please try again later.\n");
 	}
 
+	free(input);
 	return 0;
 }
 
@@ -70,9 +81,10 @@ void quit(){
 void print_options(){
 	printf("What would you like to do?\n\n");
 
+	printf("LIST: List the names of the files currently stored in the server.\n");
 	printf("UPLOAD: Upload a file to the server.\n");
 	printf("DOWNLOAD: Download a file from the server.\n");
-	printf("LIST: List the names of the files currently stored in the server.\n");
+	printf("DELETE: Delete a file from the server.\n");
 	printf("QUIT: Exit BitDrive.\n\n");
 }
 
@@ -93,6 +105,11 @@ void input_option(){
 		list();
 	}
 
+	else if(strcmp(input, "DELETE") == 0){
+		free(input);
+		delete();
+	}
+
 	else if(strcmp(input, "QUIT") == 0){
 		free(input);
 		quit();
@@ -100,15 +117,14 @@ void input_option(){
 }
 
 int main(){
-	// printf("==============================================\n");	
-	// printf("Welcome to BitDrive!\n");
-	// printf("==============================================\n");	
+	printf("==============================================\n");	
+	printf("Welcome to BitDrive!\n");
+	printf("==============================================\n");	
 
-	// while(loop == true){
-	// 	print_options();
-	// 	input_option();
-	// }
+	while(loop == true){
+		print_options();
+		input_option();
+	}
 
-	list();
 	return 0;
 }
