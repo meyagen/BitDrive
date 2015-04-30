@@ -1,2 +1,114 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <dirent.h> 
+#include <sys/stat.h>
+
+typedef enum {UPLOAD, DOWNLOAD, LIST, QUIT} server_options;
+struct stat file_stats;
+server_options option;
+
+char *input;
+bool loop = true;
+
+void get_input(){
+	printf("> ");
+	input = malloc(20*sizeof(char));
+	scanf("%s", input);	
+}
+
+
+int upload(){
+	printf("What file would you like to upload?\n");
+	get_input();
+
+	free(input);
+	return 0;
+}
+
+int download(){
+	printf("What file would you like to download?\n");
+	get_input();
+
+	free(input);
+	return 0;
+}
+
+int list(){
+	DIR *dir;
+	struct dirent *ent;
+	char* path;
+	path = ".";
+	dir = opendir(path);
+
+	if(dir){
+		printf("Here are the list of files:\n");
+		printf("----------------------------------------------");	
+		while((ent = readdir(dir)) != NULL){
+			if(ent->d_type != 4){
+					if(!stat(ent->d_name, &file_stats)){
+						printf("\n%s (%lld bytes)", ent->d_name, (long long)file_stats.st_size);
+				}
+			}
+		}
+		printf("\n----------------------------------------------\n\n");	
+	}
+
+	else {
+		printf("There are no files available for download.\n");		
+	}
+
+	return 0;
+}
+
+void quit(){
+	printf("Thank you for using BitDrive!\n");
+	loop = false;
+}
+
+void print_options(){
+	printf("What would you like to do?\n\n");
+
+	printf("UPLOAD: Upload a file to the server.\n");
+	printf("DOWNLOAD: Download a file from the server.\n");
+	printf("LIST: List the names of the files currently stored in the server.\n");
+	printf("QUIT: Exit BitDrive.\n\n");
+}
+
+void input_option(){
+	get_input();
+	if(strcmp(input, "UPLOAD") == 0){
+		free(input);
+		upload();
+	}
+	
+	else if(strcmp(input, "DOWNLOAD") == 0){
+		free(input);
+		download();
+	}
+
+	else if(strcmp(input, "LIST") == 0){
+		free(input);
+		list();
+	}
+
+	else if(strcmp(input, "QUIT") == 0){
+		free(input);
+		quit();
+	}
+}
+
+int main(){
+	// printf("==============================================\n");	
+	// printf("Welcome to BitDrive!\n");
+	// printf("==============================================\n");	
+
+	// while(loop == true){
+	// 	print_options();
+	// 	input_option();
+	// }
+
+	list();
+	return 0;
+}
