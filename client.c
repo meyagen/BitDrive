@@ -66,7 +66,7 @@ int delete(){
 	}
 
 	else {
-		printf("There was a problem with deleting the file. Perhaps it is being used by another application. Please try again later.\n");
+		printf("(!!) ERROR: There was a problem with deleting the file. Please try again later.\n");
 	}
 
 	free(input);
@@ -79,8 +79,8 @@ void quit(){
 }
 
 void print_options(){
-	printf("What would you like to do?\n\n");
-
+	printf("\nWhat would you like to do?\n");
+	printf("==================================================================\n");	
 	printf("LIST: List the names of the files currently stored in the server.\n");
 	printf("UPLOAD: Upload a file to the server.\n");
 	printf("DOWNLOAD: Download a file from the server.\n");
@@ -117,9 +117,9 @@ void input_option(){
 }
 
 int main(){
-	printf("==============================================\n");	
-	printf("Welcome to BitDrive!\n");
-	printf("==============================================\n");	
+	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");	
+	printf("Welcome to BitDrive! \n");
+	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");	
 
 	while(loop == true){
 		print_options();
@@ -128,3 +128,4 @@ int main(){
 
 	return 0;
 }
+
