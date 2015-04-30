@@ -10,6 +10,7 @@ typedef enum {LIST, UPLOAD, DOWNLOAD, DELETE, QUIT} server_options;
 server_options option;
 struct stat file_stats;
 
+char path[] = "Files/";
 char *input;
 bool loop = true;
 
@@ -22,7 +23,6 @@ void get_input(){
 void list(){
 	DIR *dir;
 	struct dirent *ent;
-	char path[] = "Files/";
 	dir = opendir(path);
 
 	if(dir){
@@ -72,7 +72,11 @@ int delete(){
 	printf("What file would you like to delete?\n");
 	get_input();
 
-	if(remove(input) == 0){
+	char *file_path = malloc(strlen(path) + strlen(input) + 2);
+	strcpy(file_path, path);
+	strcat(file_path, input);
+
+	if(remove(file_path) == 0){
 		printf("File deleted successfully!\n");
 	}
 
@@ -80,6 +84,7 @@ int delete(){
 		printf("(!!) ERROR: There was a problem with deleting the file. Please try again later.\n");
 	}
 
+	free(file_path);
 	free(input);
 	return 0;
 }
