@@ -22,15 +22,24 @@ void get_input(){
 void list(){
 	DIR *dir;
 	struct dirent *ent;
-	dir = opendir(".");
+	char path[] = "Files/";
+	dir = opendir(path);
 
 	if(dir){
 		printf("Here are the list of files:\n");
 		printf("----------------------------------------------");	
 		while((ent = readdir(dir)) != NULL){
-			if(ent->d_type != 4){
-				stat(ent->d_name, &file_stats);
-				printf("\n%s (%lld bytes)", ent->d_name, (long long)file_stats.st_size);
+			if(ent->d_type != 4){	
+				char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 2);
+				char *filename = malloc(strlen(ent->d_name));
+				strcpy(filename, ent->d_name);
+				strcat(file_path, path);
+				strcat(file_path, filename);
+
+				stat(file_path, &file_stats);
+				printf("\n%s (%lld bytes)", filename, (long long)file_stats.st_size);
+				free(filename);
+				free(file_path);
 			}
 		}
 		printf("\n----------------------------------------------\n\n");	
