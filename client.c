@@ -30,10 +30,10 @@ void list(){
 		printf("----------------------------------------------");	
 		while((ent = readdir(dir)) != NULL){
 			if(ent->d_type != 4){	
-				char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 2);
-				char *filename = malloc(strlen(ent->d_name));
+				char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 1);
+				char *filename = malloc(strlen(ent->d_name) + 1);
 				strcpy(filename, ent->d_name);
-				strcat(file_path, path);
+				strcpy(file_path, path);
 				strcat(file_path, filename);
 
 				stat(file_path, &file_stats);
@@ -72,7 +72,7 @@ int delete(){
 	printf("What file would you like to delete?\n");
 	get_input();
 
-	char *file_path = malloc(strlen(path) + strlen(input) + 2);
+	char *file_path = malloc(strlen(path) + strlen(input) + 1);
 	strcpy(file_path, path);
 	strcat(file_path, input);
 
@@ -129,6 +129,11 @@ void input_option(){
 	else if(strcmp(input, "QUIT") == 0){
 		free(input);
 		quit();
+	}
+
+	else {
+		free(input);
+		printf("Invalid input. Please try again.\n");
 	}
 }
 
