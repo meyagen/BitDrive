@@ -6,13 +6,34 @@
 #include <unistd.h> 
 #include <sys/stat.h>
 
-typedef enum {LIST, UPLOAD, DOWNLOAD, DELETE, QUIT} server_options;
-server_options option;
+
+// Initialize variables and functions
+
 struct stat file_stats;
+struct File{
+	char *filename;
+	long long size;	
+	struct File *next;
+};
 
 char path[] = "Files/";
 char *input;
 bool loop = true;
+
+void get_input();
+struct File list();
+void upload();
+void download();
+void delete();
+void quit();
+void print_options();
+void input_option();
+void print_welcome();
+
+void test_list();
+void test();
+
+// Functions
 
 void get_input(){
 	printf("> ");
@@ -20,7 +41,14 @@ void get_input(){
 	scanf("%s", input);	
 }
 
-void list(){
+struct File list(){
+	struct File *root;
+	root = (struct File *)malloc(sizeof(struct File));
+	root->next = NULL;
+
+	struct File *current;
+	current = root;
+
 	DIR *dir;
 	struct dirent *ent;
 	dir = opendir(path);
@@ -30,14 +58,26 @@ void list(){
 		printf("----------------------------------------------");	
 		while((ent = readdir(dir)) != NULL){
 			if(ent->d_type != 4){	
+				if(root->next != NULL){
+					struct File *file;
+					file = (struct File *)malloc(sizeof(struct File));
+					current->next = file;
+					current = file;
+					current->next = NULL;
+				}
+
 				char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 1);
 				char *filename = malloc(strlen(ent->d_name) + 1);
 				strcpy(filename, ent->d_name);
 				strcpy(file_path, path);
 				strcat(file_path, filename);
-
 				stat(file_path, &file_stats);
-				printf("\n%s (%lld bytes)", filename, (long long)file_stats.st_size);
+
+				current->filename = filename;
+				current->size = (long long)file_stats.st_size;
+
+				printf("\n%s (%lld bytes)", current->filename, current->size);
+
 				free(filename);
 				free(file_path);
 			}
@@ -49,26 +89,44 @@ void list(){
 		printf("There are no files available for download.\n");		
 	}
 
+	free(ent);
 	free(dir);
+	free(current);
+	
+	return *root;
 }
 
-int upload(){
+// void print_list(struct File *root){
+// 	struct File *current;
+// 	*current = root;
+
+// 	printf("Here are the list of files:\n");
+// 	printf("----------------------------------------------");	
+// 	while (current->next != NULL){
+// 		printf("\n%s (%lld bytes)", current->filename, current->size);
+// 		current = current->next;
+// 	}
+// 	printf("\n----------------------------------------------\n\n");	
+
+// 	free(current);
+// 	// free(root);
+// }
+
+void upload(){
 	printf("What file would you like to upload?\n");
 	get_input();
 
 	free(input);
-	return 0;
 }
 
-int download(){
+void download(){
 	printf("What file would you like to download?\n");
 	get_input();
 
 	free(input);
-	return 0;
 }
 
-int delete(){
+void delete(){
 	printf("What file would you like to delete?\n");
 	get_input();
 
@@ -86,7 +144,6 @@ int delete(){
 
 	free(file_path);
 	free(input);
-	return 0;
 }
 
 void quit(){
@@ -137,15 +194,32 @@ void input_option(){
 	}
 }
 
-int main(){
+void print_welcome(){
 	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");	
 	printf("Welcome to BitDrive! \n");
-	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");	
+	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");		
+}
 
-	while(loop == true){
-		print_options();
-		input_option();
-	}
+// Test Functions
+
+void test(){
+	test_list();
+};
+
+void test_list(){
+	// print_list(list());
+	list();
+}
+
+int main(){
+	// print_welcome();
+
+	// while(loop == true){
+	// 	print_options();
+	// 	input_option();
+	// }
+
+	test();
 
 	return 0;
 }
