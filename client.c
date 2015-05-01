@@ -97,36 +97,36 @@ void quit(){
 void print_options(){
 	printf("\nWhat would you like to do?\n");
 	printf("==================================================================\n");	
-	printf("LIST: List the names of the files currently stored in the server.\n");
-	printf("UPLOAD: Upload a file to the server.\n");
-	printf("DOWNLOAD: Download a file from the server.\n");
-	printf("DELETE: Delete a file from the server.\n");
-	printf("QUIT: Exit BitDrive.\n\n");
+	printf("[L] LIST: List the names of the files currently stored in the server.\n");
+	printf("[U] UPLOAD: Upload a file to the server.\n");
+	printf("[D] DOWNLOAD: Download a file from the server.\n");
+	printf("[X] DELETE: Delete a file from the server.\n");
+	printf("[Q] QUIT: Exit BitDrive.\n\n");
 }
 
 void input_option(){
 	get_input();
-	if(strcmp(input, "UPLOAD") == 0){
+	if(strcmp(input, "U") == 0){
 		free(input);
 		upload();
 	}
 	
-	else if(strcmp(input, "DOWNLOAD") == 0){
+	else if(strcmp(input, "D") == 0){
 		free(input);
 		download();
 	}
 
-	else if(strcmp(input, "LIST") == 0){
+	else if(strcmp(input, "L") == 0){
 		free(input);
 		list();
 	}
 
-	else if(strcmp(input, "DELETE") == 0){
+	else if(strcmp(input, "X") == 0){
 		free(input);
 		delete();
 	}
 
-	else if(strcmp(input, "QUIT") == 0){
+	else if(strcmp(input, "Q") == 0){
 		free(input);
 		quit();
 	}
