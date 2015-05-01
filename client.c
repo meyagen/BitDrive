@@ -30,6 +30,8 @@ void print_options();
 void input_option();
 void print_welcome();
 
+void print_list();
+
 void test_list();
 void test();
 
@@ -54,18 +56,8 @@ struct File list(){
 	dir = opendir(path);
 
 	if(dir){
-		printf("Here are the list of files:\n");
-		printf("----------------------------------------------");	
 		while((ent = readdir(dir)) != NULL){
 			if(ent->d_type != 4){	
-				if(root->next != NULL){
-					struct File *file;
-					file = (struct File *)malloc(sizeof(struct File));
-					current->next = file;
-					current = file;
-					current->next = NULL;
-				}
-
 				char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 1);
 				char *filename = malloc(strlen(ent->d_name) + 1);
 				strcpy(filename, ent->d_name);
@@ -76,13 +68,13 @@ struct File list(){
 				current->filename = filename;
 				current->size = (long long)file_stats.st_size;
 
-				printf("\n%s (%lld bytes)", current->filename, current->size);
-
-				free(filename);
-				free(file_path);
+				struct File *file;
+				file = (struct File *)malloc(sizeof(struct File));
+				current->next = file;
+				current = file;
+				current->next = NULL;
 			}
 		}
-		printf("\n----------------------------------------------\n\n");	
 	}
 
 	else {
@@ -91,26 +83,21 @@ struct File list(){
 
 	free(ent);
 	free(dir);
-	free(current);
-	
 	return *root;
 }
 
-// void print_list(struct File *root){
-// 	struct File *current;
-// 	*current = root;
+void print_list(struct File root){
+	struct File *current;
+	current = &root;
 
-// 	printf("Here are the list of files:\n");
-// 	printf("----------------------------------------------");	
-// 	while (current->next != NULL){
-// 		printf("\n%s (%lld bytes)", current->filename, current->size);
-// 		current = current->next;
-// 	}
-// 	printf("\n----------------------------------------------\n\n");	
-
-// 	free(current);
-// 	// free(root);
-// }
+	printf("Here are the list of files:\n");
+	printf("----------------------------------------------");	
+	while (current->next != NULL){
+		printf("\n%s (%lld bytes)", current->filename, current->size);
+		current = current->next;
+	}
+	printf("\n----------------------------------------------\n\n");	
+}
 
 void upload(){
 	printf("What file would you like to upload?\n");
@@ -207,8 +194,8 @@ void test(){
 };
 
 void test_list(){
-	// print_list(list());
-	list();
+	print_list(list());
+	// list();
 }
 
 int main(){
