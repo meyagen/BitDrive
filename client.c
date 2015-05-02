@@ -1,13 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
 void display_welcome();
+void display_commands();
+char get_command();
+char *process_command(char command, int sockfd);
+void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void start_client(char *server, int port);
 void error_occurred(const char *msg);
 
@@ -28,27 +33,72 @@ void display_welcome(){
   printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
-void start_client(char *server, int port){
-  struct sockaddr_in server_addr;
-  bzero((char *) &server_addr, sizeof(server_addr));
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(port);
+void display_commands(){
+  printf("DISPLAY COMMANDS\n");
+  //print all commands here
+}
 
-  struct hostent *host_addr;
-  int sockfd, status, n;
+char get_command(){
+  char command = 'U';
+  display_commands();
+  //get the actual command here
+  //limit it to one character
+  //return the chosen character
+  return command;
+}
 
-  char *buffer = malloc(sizeof(char) * 256);
+char *process_command(char command, int sockfd){
+  //process the command
+  //returns the response from the network
+  char *buffer;
+  int status;
+
+  buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
 
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if(sockfd < 0){
-    error_occurred("ERROR opening socket");
+  printf("Please enter the message: ");
+  fgets(buffer, 255, stdin);
+
+  status = write(sockfd, buffer, strlen(buffer));
+  if(status < 0) {
+    error_occurred("ERROR writing to socket");
   }
+
+  bzero(buffer, 256); //reset the buffer to all 0s
+
+  status = read(sockfd, buffer, 255);
+  if(status < 0){
+    error_occurred("ERROR reading from socket");
+  }
+
+  return buffer;
+}
+
+void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
+  bzero((char *) socket_addr, sizeof(*socket_addr));
+  socket_addr->sin_family = AF_INET;
+  socket_addr->sin_port = port;
+}
+
+void start_client(char *server, int port){
+  struct sockaddr_in server_addr;
+  struct hostent *host_addr;
+  int sockfd, status, n;
+  char command;
+  char *response;
+  bool is_running = true;
+
+  set_sockaddr(&server_addr, htons(port));
 
   host_addr = gethostbyname(server);
   if(host_addr == NULL){
     fprintf(stderr, "ERROR, no such host\n");
     exit(0);
+  }
+
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  if(sockfd < 0){
+    error_occurred("ERROR opening socket");
   }
 
   bcopy((char *)host_addr->h_addr,
@@ -57,24 +107,18 @@ void start_client(char *server, int port){
 
   status = connect(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
   if(status < 0){
-      error_occurred("ERROR connecting");
+    error_occurred("ERROR connecting");
   }
 
-  printf("Please enter the message: ");
-  fgets(buffer, 255, stdin);
+  printf("Connected to: %s\n", server);
 
-  n = write(sockfd, buffer, strlen(buffer));
-  if(n < 0) {
-    error_occurred("ERROR writing to socket");
+  while(is_running){
+    command = get_command();
+    response = process_command(command, sockfd);
+    printf("%s\n", response);
+    free(response);
   }
 
-  bzero(buffer, 256);
-  n = read(sockfd, buffer, 255);
-  if(n < 0){
-    error_occurred("ERROR reading from socket");
-  }
-
-  printf("%s\n", buffer);
   close(sockfd);
 }
 

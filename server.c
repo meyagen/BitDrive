@@ -28,15 +28,18 @@ void display_welcome() {
 }
 
 void start_server(int port) {
+  /* Initialization of Variables */
   struct sockaddr_in server_addr, client_addr;
-  set_sockaddr(&server_addr, htons(port));
-
-  socklen_t client_len = sizeof(client_addr);
-
+  socklen_t client_len;
+  bool server_run;
+  char *buffer;
   int sockfd, newsockfd, status, n;
-  bool server_run = true;
 
-  char *buffer = malloc(sizeof(char) * 256);
+  /* Initial Values */
+  set_sockaddr(&server_addr, htons(port));
+  client_len = sizeof(client_addr);
+  server_run = true;
+  buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -53,27 +56,28 @@ void start_server(int port) {
   printf("Server has started.\n");
   printf("Now listening to port: %d \n", port);
 
-  while(server_run) {
-    newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
-    if (newsockfd < 0) {
-      error_occurred("ERROR on accept");
-    }
+  /* Waiting for client to connect */
+  newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
+  if (newsockfd < 0) {
+    error_occurred("ERROR on accept");
+  }
 
+  /* Main Loop */
+  while(server_run) {
     n = read(newsockfd, buffer, 255);
     if(n < 0) {
       error_occurred("ERROR reading from socket");
     }
 
-    printf("Here is the message: %s\n", buffer);
+    printf("Here is the message: %s", buffer);
 
     n = write(newsockfd, "I got your message", 18);
     if(n < 0) {
       error_occurred("ERROR writing to socket");
     }
-
-    close(newsockfd);
   }
 
+  close(newsockfd);
   close(sockfd);
   printf("Closing sockets...");
 }
