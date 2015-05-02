@@ -58,6 +58,7 @@ void free_list(struct File* head){
 		// printf("%d %s\n", counter, tmp->filename);
 
 		head = head->next;
+		free(tmp->filename);
 		free(tmp);
 		// printf("Freed temp.\n");
 	}
@@ -93,11 +94,12 @@ struct File* list(){
 				char *filename = malloc(strlen(ent->d_name) + 1);
 				strcpy(filename, ent->d_name);
 				strcpy(file_path, path);
-				strcat(file_path, filename);
+				strcat(file_path, ent->d_name);
 				stat(file_path, &file_stats);
 
 				current->filename = filename;
 				current->size = (long long)file_stats.st_size;
+				free(file_path);
 			}
 		}
 	}
@@ -152,6 +154,7 @@ char *list_to_string(struct File *root){
 		current = current->next;
 	}
 
+	free_list(root);
 	return list_string;
 }
 
@@ -246,7 +249,7 @@ void print_welcome(){
 // Test Functions
 
 void test(){
-	// print_list(list());
+	print_list(list());
 	test_list();
 	test_list_to_string();
 };
@@ -302,6 +305,8 @@ void test_list_to_string(){
 	else {
 		printf("List to String: FAIL\n");
 	}
+	
+	free(list_string);
 }
 
 int main(){
