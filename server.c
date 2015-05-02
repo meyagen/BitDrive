@@ -15,6 +15,7 @@ int main(int argc, char* argv[]) {
   if(argc < 2) {
     error_occurred("No port was provided");
   }
+
   display_welcome();
   start_server(atoi(argv[1]));
   return 0;
@@ -33,8 +34,9 @@ void start_server(int port) {
   socklen_t client_len = sizeof(client_addr);
 
   int sockfd, newsockfd, status, n;
+  bool server_run = true;
 
-  char* buffer = malloc(sizeof(char) * 256);
+  char *buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -51,24 +53,27 @@ void start_server(int port) {
   printf("Server has started.\n");
   printf("Now listening to port: %d \n", port);
 
-  newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
-  if (newsockfd < 0) {
-    error("ERROR on accept");
+  while(server_run) {
+    newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
+    if (newsockfd < 0) {
+      error_occurred("ERROR on accept");
+    }
+
+    n = read(newsockfd, buffer, 255);
+    if(n < 0) {
+      error_occurred("ERROR reading from socket");
+    }
+
+    printf("Here is the message: %s\n", buffer);
+
+    n = write(newsockfd, "I got your message", 18);
+    if(n < 0) {
+      error_occurred("ERROR writing to socket");
+    }
+
+    close(newsockfd);
   }
 
-  n = read(newsockfd, buffer, 255);
-  if(n < 0) {
-    error("ERROR reading from socket");
-  }
-
-  printf("Here is the message: %s\n", buffer);
-
-  n = write(newsockfd, "I got your message", 18);
-  if(n < 0) {
-    error("ERROR writing to socket");
-  }
-
-  close(newsockfd);
   close(sockfd);
   printf("Closing sockets...");
 }
