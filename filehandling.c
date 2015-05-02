@@ -38,6 +38,7 @@ void print_welcome();
 
 void test_list();
 void test_list_to_string();
+void test_delete();
 void test();
 
 // Functions
@@ -172,10 +173,7 @@ void download(){
 	free(input);
 }
 
-void delete(){
-	printf("What file would you like to delete?\n");
-	get_input();
-
+void delete(char *input){
 	char *file_path = malloc(strlen(path) + strlen(input) + 1);
 	strcpy(file_path, path);
 	strcat(file_path, input);
@@ -189,7 +187,6 @@ void delete(){
 	}
 
 	free(file_path);
-	free(input);
 }
 
 void quit(){
@@ -221,12 +218,15 @@ void input_option(){
 
 	else if(strcmp(input, "L") == 0){
 		free(input);
-		list();
+		print_list(list());
 	}
 
 	else if(strcmp(input, "X") == 0){
 		free(input);
-		delete();
+		printf("What file would you like to delete?\n");
+		get_input();
+		delete(input);
+		free(input);
 	}
 
 	else if(strcmp(input, "Q") == 0){
@@ -249,9 +249,11 @@ void print_welcome(){
 // Test Functions
 
 void test(){
-	print_list(list());
-	test_list();
-	test_list_to_string();
+	// print_list(list());
+	// test_list();
+	// test_list_to_string();
+
+	test_delete();
 };
 
 void test_list(){
@@ -305,8 +307,28 @@ void test_list_to_string(){
 	else {
 		printf("List to String: FAIL\n");
 	}
-	
+
 	free(list_string);
+}
+
+void test_delete(){
+	printf("\n=========================\n");	
+	printf("TEST: delete()\n");
+	printf("=========================\n");	
+
+	delete("readme.txt");
+	delete("lorem.txt");
+
+	struct File* root = list();
+	if(root->filename == NULL){
+		printf("All deleted: PASS\n");
+	}
+
+	else{
+		printf("All deleted: FAIL\n");
+	}
+
+	free(root);
 }
 
 int main(){
