@@ -7,21 +7,19 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-void error(const char *msg)
-{
+void error(const char *msg){
     perror(msg);
     exit(0);
 }
 
-int main()
-{
+int main(){
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
     char buffer[256];
 
-    portno = 4545;
+    portno = 3000;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) error("ERROR opening socket");
 
