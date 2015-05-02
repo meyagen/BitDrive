@@ -21,18 +21,23 @@ char *input;
 bool loop = true;
 
 void get_input();
-struct File list();
+void free_list(struct File *head);
+
+struct File* list();
+void print_list(struct File *root);
+char *list_to_string(struct File *root);
+
 void upload();
 void download();
 void delete();
 void quit();
+
 void print_options();
 void input_option();
 void print_welcome();
 
-void print_list();
-
 void test_list();
+void test_list_to_string();
 void test();
 
 // Functions
@@ -43,10 +48,28 @@ void get_input(){
 	scanf("%s", input);	
 }
 
-struct File list(){
+void free_list(struct File* head){
+	struct File *tmp;
+	int counter = 0;
+	while (head != NULL) {
+		tmp = head;
+
+		counter++;
+		// printf("%d %s\n", counter, tmp->filename);
+
+		head = head->next;
+		free(tmp);
+		// printf("Freed temp.\n");
+	}
+
+	free(head);
+}
+
+struct File* list(){
 	struct File *root;
 	root = (struct File *)malloc(sizeof(struct File));
 	root->next = NULL;
+	root->filename = NULL;
 
 	struct File *current;
 	current = root;
@@ -57,7 +80,15 @@ struct File list(){
 
 	if(dir){
 		while((ent = readdir(dir)) != NULL){
-			if(ent->d_type != 4){	
+			if(ent->d_type == 8){	
+				if(current->filename != NULL){
+					struct File *file;
+					file = (struct File *)malloc(sizeof(struct File));
+					current->next = file;
+					current = file;
+					current->next = NULL;
+				}
+
 				char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 1);
 				char *filename = malloc(strlen(ent->d_name) + 1);
 				strcpy(filename, ent->d_name);
@@ -67,12 +98,6 @@ struct File list(){
 
 				current->filename = filename;
 				current->size = (long long)file_stats.st_size;
-
-				struct File *file;
-				file = (struct File *)malloc(sizeof(struct File));
-				current->next = file;
-				current = file;
-				current->next = NULL;
 			}
 		}
 	}
@@ -83,20 +108,51 @@ struct File list(){
 
 	free(ent);
 	free(dir);
-	return *root;
+	return root;
 }
 
-void print_list(struct File root){
+void print_list(struct File* root){
 	struct File *current;
-	current = &root;
+	current = root;
 
 	printf("Here are the list of files:\n");
 	printf("----------------------------------------------");	
-	while (current->next != NULL){
+	while (current != NULL){
 		printf("\n%s (%lld bytes)", current->filename, current->size);
 		current = current->next;
 	}
-	printf("\n----------------------------------------------\n\n");	
+	printf("\n----------------------------------------------\n\n");
+
+	free_list(root);
+}
+
+char *list_to_string(struct File *root){
+	struct File *current;
+	current = root;
+	long long size = 0;
+	int file_counter = 0;
+
+	// get size for malloc
+	while (current != NULL){
+		size += sizeof(*current);
+		file_counter++;
+		current = current->next;
+	}
+
+	char *list_string = malloc(size + (2*file_counter) + file_counter);
+	strcpy(list_string, "\0");
+	current = root;	
+	while (current != NULL){
+		char buffer[100];
+		sprintf(buffer, "%llu", current->size);
+		strcat(list_string, current->filename);
+		strcat(list_string, "\n");
+		strcat(list_string, buffer);
+		strcat(list_string, "\n");
+		current = current->next;
+	}
+
+	return list_string;
 }
 
 void upload(){
@@ -190,12 +246,62 @@ void print_welcome(){
 // Test Functions
 
 void test(){
+	// print_list(list());
 	test_list();
+	test_list_to_string();
 };
 
 void test_list(){
-	print_list(list());
-	// list();
+	printf("\n=========================\n");	
+	printf("TEST: list()\n");
+	printf("=========================\n");	
+
+	struct File *root = list();
+	struct File *current;
+	current = root;
+
+	while (current != NULL){
+		if(strcmp(current->filename, "readme.txt") == 0){
+				if(current->size == 44){
+					printf("Struct for %s: PASS\n", current->filename);
+				}
+				else {
+					printf("Struct for %s: FAIL (wrong size)\n", current->filename);
+				}
+		}
+
+		else if(strcmp(current->filename, "lorem.txt") == 0){
+				if(current->size == 244){
+					printf("Struct for %s: PASS\n", current->filename);
+				}
+				else {
+					printf("Struct for %s: FAIL (wrong size)\n", current->filename);
+				}
+		}
+
+		else{
+			printf("Unknown struct: %s (%llu bytes)\n", current->filename, current->size);
+		}
+
+		current = current->next;
+	}
+
+	free_list(root);
+}
+
+void test_list_to_string(){
+	printf("\n=========================\n");	
+	printf("TEST: list_to_string()\n");
+	printf("=========================\n");	
+	char *list_string = list_to_string(list());
+
+	if(strcmp(list_string, "readme.txt\n44\nlorem.txt\n244\n") == 0){
+		printf("List to String: PASS\n");
+	}
+
+	else {
+		printf("List to String: FAIL\n");
+	}
 }
 
 int main(){
