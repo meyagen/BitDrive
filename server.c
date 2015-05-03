@@ -7,6 +7,9 @@
 #include <netinet/in.h>
 
 void start_server(int port);
+char *list();
+char *quit();
+char *invalid_input();
 void process_request(char *request, int sockfd);
 void display_welcome();
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
@@ -78,7 +81,15 @@ void process_request(char *request, int clientfd){
 
   printf("Message: %s\n", request);
   if(strcmp(request, "LIST") == 0){
-    response = "FILE1.txt,12kb/FILE2.txt,10kb";
+  	response = list();
+  }
+
+  else if(strcmp(request, "QUIT") == 0){
+  	response = quit();
+  }
+
+  else {
+  	response = invalid_input();
   }
 
   status = write(clientfd, response, strlen(response));
@@ -103,4 +114,16 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port){
 void error_occurred(const char *msg){
   perror(msg);
   exit(1);
+}
+
+char *list(){
+	return "Here are the list of files:\n----------------------------------------------\n----------------------------------------------\n";	
+}
+
+char *invalid_input(){
+	return "Invalid input. Please try again.";	
+}
+
+char *quit(){
+	return "Disconnecting...";	
 }
