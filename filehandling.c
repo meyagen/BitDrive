@@ -253,7 +253,14 @@ void test(){
 	// test_list();
 	// test_list_to_string();
 
-	test_delete();
+	// test_delete();
+  int i;
+  char commands[2] = {'L', 'Q'};
+
+  for(i = 0; i < 2; i++){
+  	printf("%c\n", commands[i]);
+  }
+
 };
 
 void test_list(){

@@ -13,6 +13,17 @@ void display_commands();
 char get_command();
 char *process_command(char command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
+bool send_command(char command, int sockfd);
+
+void test_list(char *response);
+void test_upload(char *response);
+void test_download(char *response);
+void test_delete(char *response);
+void test_quit(char *response);
+void test_commands(char command, int sockfd);
+void test(int sockfd);
+
+void run_bitdrive(int sockfd);
 void start_client(char *server, int port);
 void error_occurred(const char *msg);
 
@@ -31,9 +42,6 @@ void start_client(char *server, int port){
   struct sockaddr_in server_addr;
   struct hostent *host_addr;
   int sockfd, status, n;
-  char command;
-  char *response;
-  bool is_running;
 
   set_sockaddr(&server_addr, htons(port));
 
@@ -59,21 +67,15 @@ void start_client(char *server, int port){
 
   printf("Connected to: %s\n", server);
 
-  is_running = true;
-  while(is_running){
-    command = get_command();
-    response = process_command(command, sockfd);
-    printf("%s\n", response);
-
-    if(strcmp(response, "Disconnecting...") == 0){
-    	printf("Thank you for using BitDrive!\n");
-    	is_running = false;
-    }
-
-    free(response);
-  }
-
+  // run_bitdrive(sockfd);
+  test(sockfd);
   close(sockfd);
+}
+
+void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
+  bzero((char *) socket_addr, sizeof(*socket_addr));
+  socket_addr->sin_family = AF_INET;
+  socket_addr->sin_port = port;
 }
 
 char *process_command(char command, int sockfd){
@@ -91,17 +93,17 @@ char *process_command(char command, int sockfd){
       buffer = "LIST";
       break;
     case 'U':
-    	buffer = "UPLOAD";
-    	break;
+      buffer = "UPLOAD";
+      break;
     case 'D':
-    	buffer = "DOWNLOAD";
-    	break;
+      buffer = "DOWNLOAD";
+      break;
     case 'X':
-    	buffer = "DELETE";
-    	break;
+      buffer = "DELETE";
+      break;
     case 'Q':
-    	buffer = "QUIT";
-    	break;
+      buffer = "QUIT";
+      break;
     default:
       break;
   }
@@ -126,35 +128,144 @@ void display_welcome(){
 }
 
 void display_commands(){
-	printf("\nWhat would you like to do?\n");
-	printf("==================================================================\n");	
-	printf("[L] LIST: List the names of the files currently stored in the server.\n");
-	printf("[U] UPLOAD: Upload a file to the server.\n");
-	printf("[D] DOWNLOAD: Download a file from the server.\n");
-	printf("[X] DELETE: Delete a file from the server.\n");
-	printf("[Q] QUIT: Exit BitDrive.\n\n");
+  printf("\nWhat would you like to do?\n");
+  printf("==================================================================\n");  
+  printf("[L] LIST: List the names of the files currently stored in the server.\n");
+  printf("[U] UPLOAD: Upload a file to the server.\n");
+  printf("[D] DOWNLOAD: Download a file from the server.\n");
+  printf("[X] DELETE: Delete a file from the server.\n");
+  printf("[Q] QUIT: Exit BitDrive.\n\n");
+}
+
+bool send_command(char command, int sockfd){
+  char *response;
+  response = process_command(command, sockfd);
+
+  switch(command){
+    case 'L':
+      printf("Here are the list of files:\n");
+      printf("----------------------------------------------\n"); 
+      printf("%s", response);
+      printf("----------------------------------------------\n\n");
+      break;
+    case 'U':
+      break;
+    case 'D':
+      break;
+    case 'X':
+      break;
+    case 'Q':
+      printf("%s\n", response);
+      break;
+    default:
+      printf("%s\n", response);
+      break;
+  }  
+
+  if(command == 'Q' && strcmp(response, "Disconnecting...") == 0){
+    printf("Thank you for using BitDrive!\n");
+    return false;
+  }
+
+  free(response);
+  return true;
 }
 
 char get_command(){
   char command;
-  display_commands();
-  //get the actual command here
-  //limit it to one character
-  //return the chosen character
-  //Note: U is unknown; error option
-
-	printf("> ");
-	scanf("%s", &command);
+  printf("> ");
+  scanf("%s", &command);
   return command;
-}
-
-void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
-  bzero((char *) socket_addr, sizeof(*socket_addr));
-  socket_addr->sin_family = AF_INET;
-  socket_addr->sin_port = port;
 }
 
 void error_occurred(const char *msg){
   perror(msg);
   exit(0);
+}
+
+void run_bitdrive(int sockfd){
+  bool is_running = true;
+  char command;
+
+  while(is_running){
+    display_commands();
+    command = get_command();
+    is_running = send_command(command, sockfd);
+  }
+
+  return;
+}
+
+void test_commands(char command, int sockfd){
+  char *response;
+  response = process_command(command, sockfd);
+
+  switch(command){
+    case 'L':
+      printf("Here are the list of files:\n");
+      printf("----------------------------------------------\n"); 
+      printf("%s", response);
+      printf("----------------------------------------------\n\n");
+      test_list(response);
+      break;
+    case 'U':
+      test_upload(response);
+      break;
+    case 'D':
+      test_download(response);
+      break;
+    case 'X':
+      test_delete(response);
+      break;
+    case 'Q':
+      printf("%s\n", response);
+      test_quit(response);
+      break;
+    default:
+      break;
+  }  
+
+  free(response);
+}
+
+void test_upload(char *response){  
+}
+
+void test_download(char *response){  
+}
+
+void test_delete(char *response){  
+}
+
+void test_list(char *response){
+  if(strcmp(response, "readme.txt (44 bytes)\nlorem.txt (244 bytes)\n") == 0){
+    printf("TEST: list()\t PASS\n");
+  }
+
+  else{
+    printf("TEST: list()\t FAIL\n");
+  }
+}
+
+void test_quit(char *response){
+  if(strcmp(response, "Disconnecting...") == 0){
+    printf("Thank you for using BitDrive!\n");
+    printf("TEST: quit()\t PASS\n");
+  }
+
+  else{
+    printf("TEST: quit()\t PASS\n");        
+  }
+}
+
+void test(int sockfd){
+  bool is_running = true;
+  int i;
+  char commands[2] = {'L', 'Q'};
+
+  for(i = 0; i < 2; i++){
+    test_commands(commands[i], sockfd);
+  }
+
+  return;
 }

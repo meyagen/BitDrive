@@ -81,15 +81,15 @@ void process_request(char *request, int clientfd){
 
   printf("Message: %s\n", request);
   if(strcmp(request, "LIST") == 0){
-  	response = list();
+    response = list();
   }
 
   else if(strcmp(request, "QUIT") == 0){
-  	response = quit();
+    response = quit();
   }
 
   else {
-  	response = invalid_input();
+    response = invalid_input();
   }
 
   status = write(clientfd, response, strlen(response));
@@ -117,13 +117,13 @@ void error_occurred(const char *msg){
 }
 
 char *list(){
-	return "Here are the list of files:\n----------------------------------------------\n----------------------------------------------\n";	
+  return "readme.txt (44 bytes)\nlorem.txt (244 bytes)\n";  
 }
 
 char *invalid_input(){
-	return "Invalid input. Please try again.";	
+  return "Invalid input. Please try again.";  
 }
 
 char *quit(){
-	return "Disconnecting...";	
+  return "Disconnecting...";  
 }
