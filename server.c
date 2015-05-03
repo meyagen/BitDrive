@@ -5,11 +5,26 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <dirent.h> 
+#include <unistd.h> 
+#include <sys/stat.h>
+
+struct File{
+  char *filename;
+  long long size; 
+  struct File *next;
+};
 
 void start_server(int port);
-char *list();
-char *quit();
-char *invalid_input();
+void free_list(struct File *head);
+struct File* create_list();
+char *list_to_string(struct File *root);
+int list(int clientfd);
+int upload(int clientfd);
+int download(int clientfd);
+int delete(int clientfd);
+int quit(int clientfd);
+int invalid_input(int clientfd);
 void process_request(char *request, int sockfd);
 void display_welcome();
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
@@ -76,23 +91,20 @@ void start_server(int port){
 }
 
 void process_request(char *request, int clientfd){
-  char *response;
   int status;
-
   printf("Message: %s\n", request);
   if(strcmp(request, "LIST") == 0){
-    response = list();
+    status = list(clientfd);
   }
 
   else if(strcmp(request, "QUIT") == 0){
-    response = quit();
+    status = quit(clientfd);
   }
 
   else {
-    response = invalid_input();
+    status = invalid_input(clientfd);
   }
 
-  status = write(clientfd, response, strlen(response));
   if(status < 0) {
     error_occurred("ERROR writing to socket");
   }
@@ -116,14 +128,131 @@ void error_occurred(const char *msg){
   exit(1);
 }
 
-char *list(){
-  return "readme.txt (44 bytes)\nlorem.txt (244 bytes)\n";  
+int list(int clientfd){
+  char *response = list_to_string(create_list());
+  int status = write(clientfd, response, strlen(response));
+  free(response);
+  return status;
 }
 
-char *invalid_input(){
-  return "Invalid input. Please try again.";  
+int upload(int clientfd){
+  return 0;
 }
 
-char *quit(){
-  return "Disconnecting...";  
+int download(int clientfd){
+  return 0;
 }
+
+int delete(int clientfd){
+  return 0;
+}
+
+int quit(int clientfd){
+  char *response = "Disconnecting...";
+  return write(clientfd, response, strlen(response));
+}
+
+int invalid_input(int clientfd){
+  char *response = "Invalid input. Please try again.";
+  return write(clientfd, response, strlen(response));
+}
+
+void free_list(struct File* head){
+  struct File *tmp;
+  int counter = 0;
+  while (head != NULL) {
+    tmp = head;
+
+    counter++;
+    // printf("%d %s\n", counter, tmp->filename);
+
+    head = head->next;
+    free(tmp->filename);
+    free(tmp);
+    // printf("Freed temp.\n");
+  }
+
+  free(head);
+}
+
+struct File* create_list(){
+  char path[] = "Files/";
+  struct stat file_stats;
+  struct File *root;
+  root = (struct File *)malloc(sizeof(struct File));
+  root->next = NULL;
+  root->filename = NULL;
+
+  struct File *current;
+  current = root;
+
+  DIR *dir;
+  struct dirent *ent;
+  dir = opendir(path);
+
+  if(dir){
+    while((ent = readdir(dir)) != NULL){
+      if(ent->d_type == 8){ 
+        if(current->filename != NULL){
+          struct File *file;
+          file = (struct File *)malloc(sizeof(struct File));
+          current->next = file;
+          current = file;
+          current->next = NULL;
+        }
+
+        char *file_path = malloc(strlen(path) + strlen(ent->d_name) + 1);
+        char *filename = malloc(strlen(ent->d_name) + 1);
+        strcpy(filename, ent->d_name);
+        strcpy(file_path, path);
+        strcat(file_path, ent->d_name);
+        stat(file_path, &file_stats);
+
+        current->filename = filename;
+        current->size = (long long)file_stats.st_size;
+        free(file_path);
+      }
+    }
+  }
+
+  else {
+    printf("There are no files available for download.\n");   
+  }
+
+  free(ent);
+  free(dir);
+  return root;
+}
+
+char *list_to_string(struct File *root){
+  struct File *current;
+  current = root;
+  long long size = 0;
+  int file_counter = 0;
+
+  // get size for malloc
+  while (current != NULL){
+    size += sizeof(*current);
+    file_counter++;
+    current = current->next;
+  }
+
+  char *list_string = malloc(size + (2*file_counter) + file_counter);
+  strcpy(list_string, "\0");
+  current = root; 
+  while (current != NULL){
+    //convert current->size to string
+    char file_size[20];
+    sprintf(file_size, "%llu", current->size);
+    
+    strcat(list_string, current->filename);
+    strcat(list_string, " (");
+    strcat(list_string, file_size);
+    strcat(list_string, " bytes)\n");
+    current = current->next;
+  }
+
+  free_list(root);
+  return list_string;
+}
+
