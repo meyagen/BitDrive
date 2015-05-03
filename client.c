@@ -27,72 +27,19 @@ int main(int argc, char* argv[]){
   return 0;
 }
 
-void display_welcome(){
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-  printf("Welcome to BitDrive! \n");
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-}
-
-void display_commands(){
-  printf("DISPLAY COMMANDS\n");
-  //print all commands here
-}
-
-char get_command(){
-  char command = 'U';
-  display_commands();
-  //get the actual command here
-  //limit it to one character
-  //return the chosen character
-  return command;
-}
-
-char *process_command(char command, int sockfd){
-  //process the command
-  //returns the response from the network
-  char *buffer;
-  int status;
-
-  buffer = malloc(sizeof(char) * 256);
-  bzero(buffer, 256);
-
-  printf("Please enter the message: ");
-  fgets(buffer, 255, stdin);
-
-  status = write(sockfd, buffer, strlen(buffer));
-  if(status < 0) {
-    error_occurred("ERROR writing to socket");
-  }
-
-  bzero(buffer, 256); //reset the buffer to all 0s
-
-  status = read(sockfd, buffer, 255);
-  if(status < 0){
-    error_occurred("ERROR reading from socket");
-  }
-
-  return buffer;
-}
-
-void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
-  bzero((char *) socket_addr, sizeof(*socket_addr));
-  socket_addr->sin_family = AF_INET;
-  socket_addr->sin_port = port;
-}
-
 void start_client(char *server, int port){
   struct sockaddr_in server_addr;
   struct hostent *host_addr;
   int sockfd, status, n;
   char command;
   char *response;
-  bool is_running = true;
+  bool is_running;
 
   set_sockaddr(&server_addr, htons(port));
 
   host_addr = gethostbyname(server);
   if(host_addr == NULL){
-    fprintf(stderr, "ERROR, no such host\n");
+    error_occurred("ERROR, no such host\n");
     exit(0);
   }
 
@@ -112,6 +59,7 @@ void start_client(char *server, int port){
 
   printf("Connected to: %s\n", server);
 
+  is_running = true;
   while(is_running){
     command = get_command();
     response = process_command(command, sockfd);
@@ -120,6 +68,64 @@ void start_client(char *server, int port){
   }
 
   close(sockfd);
+}
+
+char *process_command(char command, int sockfd){
+  //process the command
+  //returns the response from the server
+  char *buffer;
+  char *response;
+  int status;
+
+  response = malloc(sizeof(char) * 256);
+  bzero(response, 256);
+
+  switch(command){
+    case 'L':
+      buffer = "LIST";
+      break;
+    default:
+      break;
+  }
+
+  status = write(sockfd, buffer, strlen(buffer)); //send command
+  if(status < 0) {
+    error_occurred("ERROR writing to socket");
+  }
+
+  status = read(sockfd, response, 255); //receive the response
+  if(status < 0){
+    error_occurred("ERROR reading from socket");
+  }
+
+  return response;
+}
+
+void display_welcome(){
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+  printf("Welcome to BitDrive! \n");
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+}
+
+void display_commands(){
+  printf("DISPLAY COMMANDS\n");
+  //print all commands here
+}
+
+char get_command(){
+  char command = 'L';
+  display_commands();
+  //get the actual command here
+  //limit it to one character
+  //return the chosen character
+  //Note: U is unknows; error option
+  return command;
+}
+
+void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
+  bzero((char *) socket_addr, sizeof(*socket_addr));
+  socket_addr->sin_family = AF_INET;
+  socket_addr->sin_port = port;
 }
 
 void error_occurred(const char *msg){

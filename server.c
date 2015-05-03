@@ -6,8 +6,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-void display_welcome();
 void start_server(int port);
+void process_request(char *request, int sockfd);
+void display_welcome();
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void error_occurred(const char *msg);
 
@@ -21,19 +22,13 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
-void display_welcome() {
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-  printf("Welcome to BitDrive Server! \n");
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-}
-
-void start_server(int port) {
+void start_server(int port){
   /* Initialization of Variables */
   struct sockaddr_in server_addr, client_addr;
   socklen_t client_len;
   bool server_run;
   char *buffer;
-  int sockfd, newsockfd, status, n;
+  int sockfd, newsockfd, status;
 
   /* Initial Values */
   set_sockaddr(&server_addr, htons(port));
@@ -64,17 +59,12 @@ void start_server(int port) {
 
   /* Main Loop */
   while(server_run) {
-    n = read(newsockfd, buffer, 255);
-    if(n < 0) {
+    status = read(newsockfd, buffer, 255);
+    if(status < 0) {
       error_occurred("ERROR reading from socket");
     }
 
-    printf("Here is the message: %s", buffer);
-
-    n = write(newsockfd, "I got your message", 18);
-    if(n < 0) {
-      error_occurred("ERROR writing to socket");
-    }
+    process_request(buffer, newsockfd);
   }
 
   close(newsockfd);
@@ -82,14 +72,35 @@ void start_server(int port) {
   printf("Closing sockets...");
 }
 
-void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
+void process_request(char *request, int clientfd){
+  char *response;
+  int status;
+
+  printf("Message: %s\n", request);
+  if(strcmp(request, "LIST") == 0){
+    response = "FILE1.txt,12kb/FILE2.txt,10kb";
+  }
+
+  status = write(clientfd, response, strlen(response));
+  if(status < 0) {
+    error_occurred("ERROR writing to socket");
+  }
+}
+
+void display_welcome(){
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+  printf("Welcome to BitDrive Server! \n");
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+}
+
+void set_sockaddr(struct sockaddr_in *socket_addr, int port){
   bzero((char *) socket_addr, sizeof(*socket_addr));
   socket_addr->sin_family = AF_INET;
   socket_addr->sin_addr.s_addr = INADDR_ANY;
   socket_addr->sin_port = port;
 }
 
-void error_occurred(const char *msg) {
+void error_occurred(const char *msg){
   perror(msg);
   exit(1);
 }
