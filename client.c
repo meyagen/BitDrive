@@ -11,14 +11,18 @@
 void display_welcome();
 void display_commands();
 char get_command();
+char *get_input();
+void send_request(int sockfd, char *buffer);
+char *recv_response(int sockfd, char *response);
 char *process_command(char command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
+void delete(int sockfd, char *response);
 bool send_command(char command, int sockfd);
 
 void test_list(char *response);
 void test_upload(char *response);
 void test_download(char *response);
-void test_delete(char *response);
+void test_delete(int sockfd, char *response);
 void test_quit(char *response);
 void test_commands(char command, int sockfd);
 void test(int sockfd);
@@ -79,8 +83,6 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
 }
 
 char *process_command(char command, int sockfd){
-  //process the command
-  //returns the response from the server
   char *buffer;
   char *response;
   int status;
@@ -108,17 +110,24 @@ char *process_command(char command, int sockfd){
       break;
   }
 
-  status = write(sockfd, buffer, strlen(buffer)); //send command
+  send_request(sockfd, buffer);
+  return recv_response(sockfd, response);
+}
+
+void send_request(int sockfd, char *buffer){
+  int status = write(sockfd, buffer, strlen(buffer));
   if(status < 0) {
     error_occurred("ERROR writing to socket");
-  }
+  }  
+}
 
-  status = read(sockfd, response, 255); //receive the response
+char *recv_response(int sockfd, char *response){
+  int status = read(sockfd, response, 255); //receive the response
   if(status < 0){
     error_occurred("ERROR reading from socket");
   }
 
-  return response;
+  return response;  
 }
 
 void display_welcome(){
@@ -153,6 +162,8 @@ bool send_command(char command, int sockfd){
     case 'D':
       break;
     case 'X':
+      printf("%s", response);
+      delete(sockfd, response);
       break;
     case 'Q':
       printf("%s\n", response);
@@ -163,6 +174,7 @@ bool send_command(char command, int sockfd){
   }  
 
   if(command == 'Q' && strcmp(response, "Disconnecting...") == 0){
+    free(response);
     printf("Thank you for using BitDrive!\n");
     return false;
   }
@@ -176,6 +188,13 @@ char get_command(){
   printf("> ");
   scanf("%s", &command);
   return command;
+}
+
+char *get_input(){
+  printf("> ");
+  char *input = malloc(sizeof(char) * 256);
+  scanf("%s", input);
+  return input;
 }
 
 void error_occurred(const char *msg){
@@ -194,6 +213,18 @@ void run_bitdrive(int sockfd){
   }
 
   return;
+}
+
+void delete(int sockfd, char *response){
+  if(strcmp(response, "Which file would you like to delete?\n") == 0){
+    char *file = get_input();
+    send_request(sockfd, file);
+    free(file);
+
+    bzero(response, 256);
+    recv_response(sockfd, response);
+    printf("%s", response);
+  }
 }
 
 void test_commands(char command, int sockfd){
@@ -215,7 +246,8 @@ void test_commands(char command, int sockfd){
       test_download(response);
       break;
     case 'X':
-      test_delete(response);
+      printf("%s", response);
+      test_delete(sockfd, response);
       break;
     case 'Q':
       printf("%s\n", response);
@@ -234,7 +266,37 @@ void test_upload(char *response){
 void test_download(char *response){  
 }
 
-void test_delete(char *response){  
+void test_delete(int sockfd, char *response){
+  if(strcmp(response, "Which file would you like to delete?\n") == 0){
+    send_request(sockfd, "lorem.txt");
+
+    bzero(response, 256);
+    recv_response(sockfd, response);
+    printf("%s", response);
+
+    if(strcmp(response, "File deleted successfully!\n") == 0){
+      bzero(response, 256);
+      char *list_response = process_command('L', sockfd);
+      printf("Files remaining:\n%s", list_response);
+      if(strcmp(list_response, "readme.txt (44 bytes)\n") == 0){
+        printf("TEST: delete()\t PASS\n");      
+      }
+
+      else{
+        printf("TEST: delete()\t FAIL\t File not deleted.\n");      
+      }
+
+      free(list_response);
+    }
+
+    else{
+      printf("TEST: delete()\t FAIL\t File not deleted.\n");      
+    }  
+  }
+
+  else{
+    printf("TEST: delete()\t FAIL\t Incorrect response (should ask for file).\n");
+  }
 }
 
 void test_list(char *response){
@@ -254,16 +316,16 @@ void test_quit(char *response){
   }
 
   else{
-    printf("TEST: quit()\t PASS\n");        
+    printf("TEST: quit()\t FAIL\n");        
   }
 }
 
 void test(int sockfd){
-  bool is_running = true;
   int i;
-  char commands[2] = {'L', 'Q'};
+  bool is_running = true;
+  char commands[3] = {'L', 'X', 'Q'};
 
-  for(i = 0; i < 2; i++){
+  for(i = 0; i < 3; i++){
     test_commands(commands[i], sockfd);
   }
 

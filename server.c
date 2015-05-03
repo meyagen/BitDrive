@@ -9,22 +9,25 @@
 #include <unistd.h> 
 #include <sys/stat.h>
 
+char path[] = "Files/";
 struct File{
   char *filename;
   long long size; 
   struct File *next;
 };
 
+char *read_request(int sockfd, char *buffer);
+void write_response(int clientfd, char *response);
 void start_server(int port);
 void free_list(struct File *head);
 struct File* create_list();
 char *list_to_string(struct File *root);
-int list(int clientfd);
-int upload(int clientfd);
-int download(int clientfd);
-int delete(int clientfd);
-int quit(int clientfd);
-int invalid_input(int clientfd);
+void list(int clientfd);
+void upload(int clientfd);
+void download(int clientfd);
+void delete(int clientfd, char *request);
+void quit(int clientfd);
+void invalid_input(int clientfd);
 void process_request(char *request, int sockfd);
 void display_welcome();
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
@@ -38,6 +41,12 @@ int main(int argc, char* argv[]) {
   display_welcome();
   start_server(atoi(argv[1]));
   return 0;
+}
+
+void display_welcome(){
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+  printf("Welcome to BitDrive Server! \n");
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
 void start_server(int port){
@@ -77,12 +86,9 @@ void start_server(int port){
 
   /* Main Loop */
   while(server_run) {
-    status = read(newsockfd, buffer, 255);
-    if(status < 0) {
-      error_occurred("ERROR reading from socket");
-    }
-
+    buffer = read_request(newsockfd, buffer);
     process_request(buffer, newsockfd);
+    bzero(buffer, 256);
   }
 
   close(newsockfd);
@@ -94,26 +100,20 @@ void process_request(char *request, int clientfd){
   int status;
   printf("Message: %s\n", request);
   if(strcmp(request, "LIST") == 0){
-    status = list(clientfd);
+    list(clientfd);
   }
 
+  else if(strcmp(request, "DELETE") == 0){
+    delete(clientfd, request);
+  }
+  
   else if(strcmp(request, "QUIT") == 0){
-    status = quit(clientfd);
+    quit(clientfd);
   }
 
   else {
-    status = invalid_input(clientfd);
+    invalid_input(clientfd);
   }
-
-  if(status < 0) {
-    error_occurred("ERROR writing to socket");
-  }
-}
-
-void display_welcome(){
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-  printf("Welcome to BitDrive Server! \n");
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
 void set_sockaddr(struct sockaddr_in *socket_addr, int port){
@@ -128,33 +128,68 @@ void error_occurred(const char *msg){
   exit(1);
 }
 
-int list(int clientfd){
-  char *response = list_to_string(create_list());
+char *read_request(int sockfd, char *buffer){
+  int status = read(sockfd, buffer, 255);
+  if(status < 0) {
+    error_occurred("ERROR reading from socket");
+  }
+
+  return buffer;
+}
+
+void write_response(int clientfd, char *response){
   int status = write(clientfd, response, strlen(response));
+  if(status < 0) {
+    error_occurred("ERROR writing to socket");
+  }
+}
+
+void list(int clientfd){
+  char *response = list_to_string(create_list());
+  write_response(clientfd, response);
   free(response);
-  return status;
 }
 
-int upload(int clientfd){
-  return 0;
+void upload(int clientfd){
 }
 
-int download(int clientfd){
-  return 0;
+void download(int clientfd){
 }
 
-int delete(int clientfd){
-  return 0;
+void delete(int clientfd, char *request){
+  char *response = "Which file would you like to delete?\n";
+  write_response(clientfd, response);
+
+  // get file to delete
+  bzero(request, 256);
+  request = read_request(clientfd, request);
+  printf("Message: %s\n", request);
+
+  // delete file
+  char *file_path = malloc(strlen(path) + strlen(request) + 1);
+  strcpy(file_path, path);
+  strcat(file_path, request);
+
+  if(remove(file_path) == 0){
+    response = "File deleted successfully!\n";
+  }
+
+  else {
+    response = "There was a problem with deleting the file. Please try again later.\n";
+  }
+
+  free(file_path);
+  write_response(clientfd, response);
 }
 
-int quit(int clientfd){
+void quit(int clientfd){
   char *response = "Disconnecting...";
-  return write(clientfd, response, strlen(response));
+  write_response(clientfd, response);
 }
 
-int invalid_input(int clientfd){
+void invalid_input(int clientfd){
   char *response = "Invalid input. Please try again.";
-  return write(clientfd, response, strlen(response));
+  write_response(clientfd, response);
 }
 
 void free_list(struct File* head){
@@ -176,7 +211,6 @@ void free_list(struct File* head){
 }
 
 struct File* create_list(){
-  char path[] = "Files/";
   struct stat file_stats;
   struct File *root;
   root = (struct File *)malloc(sizeof(struct File));
