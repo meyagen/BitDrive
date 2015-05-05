@@ -19,6 +19,7 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void delete(int sockfd, char *response);
 bool send_command(char command, int sockfd);
 
+bool assert_equals(char *actual, char *expected);
 void test_list(char *response);
 void test_upload(char *response);
 void test_download(char *response);
@@ -267,18 +268,18 @@ void test_download(char *response){
 }
 
 void test_delete(int sockfd, char *response){
-  if(strcmp(response, "Which file would you like to delete?\n") == 0){
+  if(assert_equals(response, "Which file would you like to delete?\n")){
     send_request(sockfd, "lorem.txt");
 
     bzero(response, 256);
     recv_response(sockfd, response);
     printf("%s", response);
 
-    if(strcmp(response, "File deleted successfully!\n") == 0){
+    if(assert_equals(response, "File deleted successfully!\n")){
       bzero(response, 256);
       char *list_response = process_command('L', sockfd);
       printf("Files remaining:\n%s", list_response);
-      if(strcmp(list_response, "readme.txt (44 bytes)\n") == 0){
+      if(assert_equals(list_response, "readme.txt (44 bytes)\n")){
         printf("TEST: delete()\t PASS\n");      
       }
 
@@ -300,7 +301,7 @@ void test_delete(int sockfd, char *response){
 }
 
 void test_list(char *response){
-  if(strcmp(response, "readme.txt (44 bytes)\nlorem.txt (244 bytes)\n") == 0){
+  if(assert_equals(response, "readme.txt (44 bytes)\nlorem.txt (244 bytes)\n")){
     printf("TEST: list()\t PASS\n");
   }
 
@@ -310,7 +311,7 @@ void test_list(char *response){
 }
 
 void test_quit(char *response){
-  if(strcmp(response, "Disconnecting...") == 0){
+  if(assert_equals(response, "Disconnecting...")){
     printf("Thank you for using BitDrive!\n");
     printf("TEST: quit()\t PASS\n");
   }
@@ -320,9 +321,16 @@ void test_quit(char *response){
   }
 }
 
+bool assert_equals(char *actual, char *expected){
+  if(strcmp(actual, expected) == 0){
+    return true;
+  }
+
+  return false;
+}
+
 void test(int sockfd){
   int i;
-  bool is_running = true;
   char commands[3] = {'L', 'X', 'Q'};
 
   for(i = 0; i < 3; i++){

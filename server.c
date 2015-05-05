@@ -18,6 +18,7 @@ struct File{
 
 char *read_request(int sockfd, char *buffer);
 void write_response(int clientfd, char *response);
+void communicate(int newsockfd);
 void start_server(int port);
 void free_list(struct File *head);
 struct File* create_list();
@@ -53,16 +54,11 @@ void start_server(int port){
   /* Initialization of Variables */
   struct sockaddr_in server_addr, client_addr;
   socklen_t client_len;
-  bool server_run;
-  char *buffer;
   int sockfd, newsockfd, status;
 
   /* Initial Values */
   set_sockaddr(&server_addr, htons(port));
   client_len = sizeof(client_addr);
-  server_run = true;
-  buffer = malloc(sizeof(char) * 256);
-  bzero(buffer, 256);
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if(sockfd < 0) {
@@ -84,13 +80,7 @@ void start_server(int port){
     error_occurred("ERROR on accept");
   }
 
-  /* Main Loop */
-  while(server_run) {
-    buffer = read_request(newsockfd, buffer);
-    process_request(buffer, newsockfd);
-    bzero(buffer, 256);
-  }
-
+  communicate(newsockfd);
   close(newsockfd);
   close(sockfd);
   printf("Closing sockets...");
@@ -142,6 +132,23 @@ void write_response(int clientfd, char *response){
   if(status < 0) {
     error_occurred("ERROR writing to socket");
   }
+}
+
+void communicate(int newsockfd){
+  bool server_run = true;
+  char *buffer = malloc(sizeof(char) * 256);
+  bzero(buffer, 256);
+
+  while(server_run) {
+    buffer = read_request(newsockfd, buffer);
+    process_request(buffer, newsockfd);
+    if(strcmp(buffer, "QUIT") == 0){
+      server_run = false;
+    }
+    bzero(buffer, 256);
+  }
+
+  free(buffer);
 }
 
 void list(int clientfd){
