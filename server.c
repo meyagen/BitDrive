@@ -88,7 +88,7 @@ void start_server(int port){
         error_occurred("ERROR on accept");
       }
 
-      printf("Connected to client %d\n", newsockfd);
+      // printf("Connected to client %d\n", newsockfd);
       clients[client_number] = client_number;
       ret = pthread_create(
                     &thread_id[client_number],
@@ -179,9 +179,16 @@ void *communicate(void *newsockfd){
 
 void list(int clientfd){
   char *response = list_to_string(create_list());
-  printf("%s\n", response);
-  write_response(clientfd, response);
-  free(response);
+  if(strcmp(response, "\0") == 0){
+    printf("No files found.\n");
+    write_response(clientfd, "(No files found in the server.)\n");
+  }
+
+  else {    
+    printf("%s\n", response);
+    write_response(clientfd, response);
+    free(response);
+  }
 }
 
 void upload(int clientfd){
@@ -298,6 +305,12 @@ char *list_to_string(struct File *root){
   long long size = 0;
   int file_counter = 0;
 
+  // check if list of files is empty first
+  if(current->filename == NULL){
+    free_list(root);
+    return "\0";
+  }
+
   // get size for malloc
   while (current != NULL){
     size += sizeof(*current);
@@ -305,6 +318,7 @@ char *list_to_string(struct File *root){
     current = current->next;
   }
 
+  printf("Didn't return. File counter: %d\n", file_counter);
   char *list_string = malloc(size + (2*file_counter) + file_counter);
   strcpy(list_string, "\0");
   current = root; 
