@@ -128,7 +128,6 @@ char *recv_response(int sockfd, char *response){
     error_occurred("ERROR reading from socket");
   }
 
-  printf("%d\n", status);
   printf("%s\n", response);
   return response;  
 }
