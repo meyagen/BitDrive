@@ -8,7 +8,9 @@
 #include <dirent.h> 
 #include <unistd.h> 
 #include <sys/stat.h>
+#include <pthread.h> 
 
+const NUM_CLIENTS = 2;
 char path[] = "Files/";
 struct File{
   char *filename;
@@ -18,7 +20,7 @@ struct File{
 
 char *read_request(int sockfd, char *buffer);
 void write_response(int clientfd, char *response);
-void communicate(int newsockfd);
+void *communicate(void *newsockfd);
 void start_server(int port);
 void free_list(struct File *head);
 struct File* create_list();
@@ -55,6 +57,9 @@ void start_server(int port){
   struct sockaddr_in server_addr, client_addr;
   socklen_t client_len;
   int sockfd, newsockfd, status;
+  int clients[NUM_CLIENTS];
+  int client_number, ret, i;
+  pthread_t thread_id[NUM_CLIENTS];
 
   /* Initial Values */
   set_sockaddr(&server_addr, htons(port));
@@ -75,15 +80,29 @@ void start_server(int port){
   printf("Now listening to port: %d \n", port);
 
   /* Waiting for client to connect */
-  newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
-  if (newsockfd < 0) {
-    error_occurred("ERROR on accept");
+  client_number = 0;
+  while(true) {
+    if(client_number < NUM_CLIENTS){
+      newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
+      if (newsockfd < 0) {
+        error_occurred("ERROR on accept");
+      }
+
+      printf("Connected to client %d\n", newsockfd);
+      clients[client_number] = client_number;
+      ret = pthread_create(
+                    &thread_id[client_number],
+                    NULL,
+                    communicate,
+                    (void*) &newsockfd
+                    );
+
+      client_number++;
+    }
   }
 
-  communicate(newsockfd);
-  close(newsockfd);
-  close(sockfd);
-  printf("Closing sockets...");
+  // close(sockfd);
+  // printf("Closing sockets...");
 }
 
 void process_request(char *request, int clientfd){
@@ -134,25 +153,33 @@ void write_response(int clientfd, char *response){
   }
 }
 
-void communicate(int newsockfd){
+void *communicate(void *newsockfd){
+  int sockfd = *((int*)newsockfd); 
+  printf("Connected to client %d...\n", sockfd);
   bool server_run = true;
   char *buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
 
+  // write_response(sockfd, "connected");
+
   while(server_run) {
-    buffer = read_request(newsockfd, buffer);
-    process_request(buffer, newsockfd);
+    buffer = read_request(sockfd, buffer);
+    process_request(buffer, sockfd);
     if(strcmp(buffer, "QUIT") == 0){
       server_run = false;
     }
+
     bzero(buffer, 256);
   }
 
   free(buffer);
+  close(sockfd);
+  return;
 }
 
 void list(int clientfd){
   char *response = list_to_string(create_list());
+  printf("%s\n", response);
   write_response(clientfd, response);
   free(response);
 }

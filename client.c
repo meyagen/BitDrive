@@ -72,8 +72,8 @@ void start_client(char *server, int port){
 
   printf("Connected to: %s\n", server);
 
-  // run_bitdrive(sockfd);
-  test(sockfd);
+  run_bitdrive(sockfd);
+  // test(sockfd);
   close(sockfd);
 }
 
@@ -128,6 +128,8 @@ char *recv_response(int sockfd, char *response){
     error_occurred("ERROR reading from socket");
   }
 
+  printf("%d\n", status);
+  printf("%s\n", response);
   return response;  
 }
 
@@ -211,7 +213,7 @@ void run_bitdrive(int sockfd){
     display_commands();
     command = get_command();
     is_running = send_command(command, sockfd);
-  }
+  }    
 
   return;
 }
