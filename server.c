@@ -5,16 +5,16 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <dirent.h> 
-#include <unistd.h> 
+#include <dirent.h>
+#include <unistd.h>
 #include <sys/stat.h>
-#include <pthread.h> 
+#include <pthread.h>
 
 const NUM_CLIENTS = 2;
 char path[] = "Files/";
 struct File{
   char *filename;
-  long long size; 
+  long long size;
   struct File *next;
 };
 
@@ -115,7 +115,7 @@ void process_request(char *request, int clientfd){
   else if(strcmp(request, "DELETE") == 0){
     delete(clientfd, request);
   }
-  
+
   else if(strcmp(request, "QUIT") == 0){
     quit(clientfd);
   }
@@ -154,8 +154,8 @@ void write_response(int clientfd, char *response){
 }
 
 void *communicate(void *newsockfd){
-  int sockfd = *((int*)newsockfd); 
-  printf("Connected to client %d...\n", sockfd);
+  int sockfd = *((int*)newsockfd);
+  printf("  client %d...\n", sockfd);
   bool server_run = true;
   char *buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
@@ -267,7 +267,7 @@ struct File* create_list(){
 
   if(dir){
     while((ent = readdir(dir)) != NULL){
-      if(ent->d_type == 8){ 
+      if(ent->d_type == 8){
         if(current->filename != NULL){
           struct File *file;
           file = (struct File *)malloc(sizeof(struct File));
@@ -291,7 +291,7 @@ struct File* create_list(){
   }
 
   else {
-    printf("There are no files available for download.\n");   
+    printf("There are no files available for download.\n");
   }
 
   free(ent);
@@ -321,12 +321,12 @@ char *list_to_string(struct File *root){
   printf("Didn't return. File counter: %d\n", file_counter);
   char *list_string = malloc(size + (2*file_counter) + file_counter);
   strcpy(list_string, "\0");
-  current = root; 
+  current = root;
   while (current != NULL){
     //convert current->size to string
     char file_size[20];
     sprintf(file_size, "%llu", current->size);
-    
+
     strcat(list_string, current->filename);
     strcat(list_string, " (");
     strcat(list_string, file_size);
@@ -337,4 +337,3 @@ char *list_to_string(struct File *root){
   free_list(root);
   return list_string;
 }
-
