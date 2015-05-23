@@ -318,7 +318,6 @@ char *list_to_string(struct File *root){
     current = current->next;
   }
 
-  printf("Didn't return. File counter: %d\n", file_counter);
   char *list_string = malloc(size + (2*file_counter) + file_counter);
   strcpy(list_string, "\0");
   current = root; 
