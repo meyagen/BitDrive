@@ -350,15 +350,17 @@ void test_commands(char command, int sockfd){
 void test_upload(int sockfd, char *response){
   if(assert_equals(response, "ready_upload")){
     printf("What file do you want to upload?\n");
-    // char *filename = get_input();
-    // char *filename = "lorem.txt";
     printf("> lorem.txt\n");
     send_request(sockfd, "lorem.txt");
+
+    char path[] = "client_files/";
+    strcat(path, "lorem.txt");
+    printf("File to upload: %s\n", path);
 
     bzero(response, 256);
     recv_response(sockfd, response);
     if(assert_equals(response, "ready_filename")){
-      if(send_file(sockfd, "lorem.txt") == true){
+      if(send_file(sockfd, path) == true){
         printf("TEST: upload()\t PASS\n\n");
       }
 
@@ -453,7 +455,7 @@ void test(int sockfd){
 
   for(i = 0; i < 4; i++){
     test_commands(commands[i], sockfd);
-    sleep(5);
+    // sleep(5);
   }
 
   return;

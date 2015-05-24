@@ -11,7 +11,7 @@
 #include <pthread.h> 
 
 const NUM_CLIENTS = 2;
-char path[] = "Files/";
+char path[] = "server_files/";
 struct File{
   char *filename;
   long long size; 
@@ -281,6 +281,7 @@ void download(int clientfd, char *request){
 
 void delete(int clientfd, char *request){
   char *response = "ready_delete";
+  char *path = "server_files/";
   write_response(clientfd, response);
 
   // get file to delete
@@ -336,6 +337,8 @@ void free_list(struct File* head){
 struct File* create_list(){
   struct stat file_stats;
   struct File *root;
+  char *directory = "server_files";
+  char *path = "server_files/";
   root = (struct File *)malloc(sizeof(struct File));
   root->next = NULL;
   root->filename = NULL;
@@ -345,7 +348,7 @@ struct File* create_list(){
 
   DIR *dir;
   struct dirent *ent;
-  dir = opendir(path);
+  dir = opendir(directory);
 
   if(dir){
     while((ent = readdir(dir)) != NULL){
