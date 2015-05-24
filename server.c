@@ -171,16 +171,22 @@ void *recv_file(int clientfd, char *filename){
   read(clientfd, buffer, 256);
   int size = atoi(buffer);
   int sum_bytes_received = 0;
-  bzero(buffer, 256);
-  printf("Size: %d\n", size);
+  int remaining_bytes = 0;
 
   while(sum_bytes_received < size) {
-    bytes_received = read(clientfd, buffer, 256);
+    bzero(buffer, 256);
     sum_bytes_received += bytes_received;
-    printf("Sum bytes_received: %d\n", sum_bytes_received);
+    remaining_bytes = size - sum_bytes_received;
+
+    if(remaining_bytes < 256){
+      bytes_received = read(clientfd, buffer, remaining_bytes);
+    }
+
+    else {      
+      bytes_received = read(clientfd, buffer, 256);
+    }
 
     if(bytes_received > 0){
-      printf("Bytes received: %d\n", bytes_received);
       fwrite(buffer, 1, bytes_received, file);
     }
   
@@ -196,6 +202,7 @@ void *recv_file(int clientfd, char *filename){
 
   fclose(file);
   printf("File received!\n");
+  // free(buffer);
 }
 
 void write_response(int clientfd, char *response){

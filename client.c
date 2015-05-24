@@ -261,8 +261,6 @@ bool send_file(int sockfd, char *filename){
 
     if(bytes_read > 0){
       write(sockfd, buffer, bytes_read);
-      // printf("Bytes sent: %d\n", bytes_read);
-      // printf("Buffer: %s\n", buffer);
     }
 
     if(bytes_read < 256){
