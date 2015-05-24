@@ -17,6 +17,7 @@ char *recv_response(int sockfd, char *response);
 char *process_command(char command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void delete(int sockfd, char *response);
+void download(int sockfd, char *response);
 void upload(int sockfd, char *response);
 bool send_file(int sockfd, char *filename);
 bool recv_file(int clientfd, char *filename);
@@ -75,8 +76,8 @@ void start_client(char *server, int port){
 
   printf("Connected to: %s\n", server);
 
-  // run_bitdrive(sockfd);
-  test(sockfd);
+  run_bitdrive(sockfd);
+  // test(sockfd);
   close(sockfd);
 }
 
@@ -170,6 +171,7 @@ bool send_command(char command, int sockfd){
       upload(sockfd, response);
       break;
     case 'D':
+      download(sockfd, response);
       break;
     case 'X':
       delete(sockfd, response);
@@ -287,11 +289,8 @@ bool send_file(int sockfd, char *filename){
 }
 
 bool recv_file(int sockfd, char *filename){
-  printf("Filename: %s\n", filename);
   FILE *file;
   file = fopen(filename, "w+");
-
-  printf("File opened.\n");
   
   int bytes_received = 0;
   char *buffer;
@@ -348,28 +347,55 @@ bool recv_file(int sockfd, char *filename){
 }
 
 void upload(int sockfd, char *response){
-  if(assert_equals(response, "ready_upload")){
+  if(strcmp(response, "ready_upload") == 0){
     printf("What file do you want to upload?\n");
     char *filename = get_input();
     send_request(sockfd, filename);
 
+    char path[] = "client_files/";
+    strcat(path, filename);
+
     bzero(response, 256);
     recv_response(sockfd, response);
     if(assert_equals(response, "ready_filename")){
-      if(send_file(sockfd, filename) == false){
-        printf("ERROR: File not sent.\n");
+      if(send_file(sockfd, path) == false){
+        printf("File not uploaded.\n");
       }
     }
 
     else {
-      printf("Server not yet ready to receive file. Try again.\n");
+      printf("Server is not yet ready. Try again.\n");
     }
-
-    free(filename);
   }
 
   else {
-    printf("Server is not yet ready to receive filename. Try again.\n");
+    printf("Server is not yet ready. Try again.\n");
+  }
+}
+
+void download(int sockfd, char *response){  
+  char path[] = "client_files/";
+  if(strcmp(response, "ready_download") == 0){
+    printf("What file do you want to download?\n");
+    char *filename = get_input();
+    send_request(sockfd, filename);
+    strcat(path, filename);
+
+    bzero(response, 256);
+    recv_response(sockfd, response);
+    if(strcmp(response, "ready_to_send") == 0){
+      if(recv_file(sockfd, path) == false){
+        printf("File not downloaded. Try again\n");
+      }
+    }
+
+    else {
+      printf("Server not yet ready. Try again.\n");
+    }
+  }
+
+  else {
+    printf("Server is not yet ready. Try again.\n");
   }
 }
 
