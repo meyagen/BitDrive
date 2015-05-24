@@ -308,7 +308,7 @@ void upload(int clientfd, char *request){
   bzero(request, 256);
   request = read_request(clientfd, request);
   if(strcmp(request, "filename_error") == 0){
-    printf("Client file does not exist. Aborting upload.\n");
+    printf("File does not exist. Aborting upload.\n");
     return;
   }
 
@@ -325,16 +325,23 @@ void upload(int clientfd, char *request){
 
 void download(int clientfd, char *request){
   char *response = "ready_download";
+  char path[] = "server_files/";
   printf("Message: %s\n", response);
   write_response(clientfd, response);
 
   // get filename
   bzero(request, 256);
   request = read_request(clientfd, request);
-  printf("Message: %s\n", request);
 
-  char path[] = "server_files/";
   strcat(path, request);
+  FILE *file = fopen(path, "r");
+  if(file == NULL){
+    printf("File does not exist. Aborting download.\n");
+    write_response(clientfd, "filename_error");
+    return;
+  }
+
+  printf("Message: %s\n", request);
 
   // ready to send
   response = "ready_to_send";

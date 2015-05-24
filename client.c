@@ -353,7 +353,7 @@ void upload(int sockfd, char *response){
     FILE *file = fopen(path, "r");
     if(file == NULL){
       send_request(sockfd, "filename_error");
-      printf("Client file does not exist. Aborting upload.\n");
+      printf("File does not exist. Aborting upload.\n");
       return;
     }
 
@@ -387,7 +387,12 @@ void download(int sockfd, char *response){
 
     bzero(response, 256);
     recv_response(sockfd, response);
-    if(strcmp(response, "ready_to_send") == 0){
+    if(strcmp(response, "filename_error") == 0){
+      printf("File does not exist. Aborting download.\n");
+      return;
+    }
+
+    else if(strcmp(response, "ready_to_send") == 0){
       if(recv_file(sockfd, path) == false){
         printf("File not downloaded. Try again\n");
       }
