@@ -244,16 +244,18 @@ bool send_file(int sockfd, char *filename){
     if(bytes_read < 256){
       if(feof(file)){
         printf("Upload done!\n");
+        free(buffer);
+        fclose(file);
         return true;
       }
 
       if(ferror(file)){
         printf("Error uploading file.\n");
-        return false;
       }
     }
   }
 
+  fclose(file);
   free(buffer);
   return false;
 }
@@ -303,6 +305,7 @@ bool recv_file(int sockfd, char *filename){
     }
   }
 
+  free(buffer);
   int status = fclose(file);
   if(status == 0) {
     printf("File received!\n");
@@ -352,11 +355,13 @@ void upload(int sockfd, char *response){
 
     FILE *file = fopen(path, "r");
     if(file == NULL){
+      free(filename);
       send_request(sockfd, "filename_error");
       printf("File does not exist. Aborting upload.\n");
       return;
     }
 
+    fclose(file);
     send_request(sockfd, filename);
     bzero(response, 256);
     recv_response(sockfd, response);
@@ -370,6 +375,8 @@ void upload(int sockfd, char *response){
     else {
       printf("Server is not yet ready. Try again.\n");
     }
+
+    free(filename);
   }
 
   else {
@@ -389,6 +396,7 @@ void download(int sockfd, char *response){
     recv_response(sockfd, response);
     if(strcmp(response, "filename_error") == 0){
       printf("File does not exist. Aborting download.\n");
+      free(filename);
       return;
     }
 
@@ -401,9 +409,12 @@ void download(int sockfd, char *response){
     else {
       printf("Server not yet ready. Try again.\n");
     }
+
+  free(filename);
   }
 
   else {
     printf("Server is not yet ready. Try again.\n");
   }
+
 }

@@ -11,7 +11,7 @@
 #include <pthread.h> 
 
 const NUM_CLIENTS = 2;
-char path[] = "server_files/";
+int client_number;
 struct File{
   char *filename;
   long long size; 
@@ -60,7 +60,7 @@ void start_server(int port){
   socklen_t client_len;
   int sockfd, newsockfd, status;
   int clients[NUM_CLIENTS];
-  int client_number, ret, i;
+  int ret, i;
   pthread_t thread_id[NUM_CLIENTS];
 
   /* Initial Values */
@@ -90,7 +90,6 @@ void start_server(int port){
         error_occurred("ERROR on accept");
       }
 
-      // printf("Connected to client %d\n", newsockfd);
       clients[client_number] = client_number;
       ret = pthread_create(
                     &thread_id[client_number],
@@ -157,6 +156,7 @@ char *read_request(int sockfd, char *buffer){
 }
 
 void *recv_file(int clientfd, char *filename){
+  char path[] = "server_files/";
   FILE *file;
   file = fopen(strcat(path, filename), "w+");
   
@@ -210,7 +210,8 @@ void *recv_file(int clientfd, char *filename){
     printf("ERROR: File not closed.\n");
   }
 
-  // free(buffer);
+  free(buffer);
+  // free(file);
 }
 
 void *send_file(int clientfd, char *filename){
@@ -382,6 +383,7 @@ void delete(int clientfd, char *request){
 void quit(int clientfd){
   char *response = "Disconnecting...";
   write_response(clientfd, response);
+  client_number--;
 }
 
 void invalid_input(int clientfd){
