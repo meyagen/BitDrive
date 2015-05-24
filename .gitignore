@@ -1,2 +1,5 @@
 client
 server
+server_files/*
+client_files/*
+
