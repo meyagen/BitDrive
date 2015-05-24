@@ -21,6 +21,7 @@ struct File{
 char *read_request(int sockfd, char *buffer);
 void write_response(int clientfd, char *response);
 void *recv_file(int clientfd, char *filename);
+void *send_file(int clientfd, char *filename);
 void *communicate(void *newsockfd);
 void start_server(int port);
 void free_list(struct File *head);
@@ -212,6 +213,47 @@ void *recv_file(int clientfd, char *filename){
   // free(buffer);
 }
 
+void *send_file(int clientfd, char *filename){
+  FILE *file;
+  file = fopen(filename, "rb");
+  
+  int bytes_read = 0;
+  char *buffer = malloc(sizeof(char) * 256);
+  bzero(buffer, 256);
+
+  if(file == NULL){
+    error_occurred("Error opening file.\n");
+  }
+
+  fseek(file, 0L, SEEK_END);
+  int size = ftell(file);
+  sprintf(buffer, "%d", size);
+  write(clientfd, buffer, 256);
+  fseek(file, 0L, SEEK_SET);
+  while(true){
+    bzero(buffer, 256);
+    bytes_read = fread(buffer, 1, 256, file);
+
+    if(bytes_read > 0){
+      write(clientfd, buffer, bytes_read);
+    }
+
+    if(bytes_read < 256){
+      if(feof(file)){
+        printf("Download done!\n");
+      }
+
+      if(ferror(file)){
+        printf("Error uploading file.\n");
+      }
+
+      break;
+    }
+  }
+
+  free(buffer);
+}
+
 void write_response(int clientfd, char *response){
   int status = write(clientfd, response, strlen(response));
   if(status < 0) {
@@ -277,6 +319,25 @@ void upload(int clientfd, char *request){
 }
 
 void download(int clientfd, char *request){
+  char *response = "ready_download";
+  printf("Message: %s\n", response);
+  write_response(clientfd, response);
+
+  // get filename
+  bzero(request, 256);
+  request = read_request(clientfd, request);
+  printf("Message: %s\n", request);
+
+  char path[] = "server_files/";
+  strcat(path, request);
+
+  // ready to send
+  response = "ready_to_send";
+  printf("Message: %s\n", response);
+  write_response(clientfd, response);
+
+  // send the file
+  send_file(clientfd, path);
 }
 
 void delete(int clientfd, char *request){

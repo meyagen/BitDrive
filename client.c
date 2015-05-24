@@ -19,12 +19,13 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void delete(int sockfd, char *response);
 void upload(int sockfd, char *response);
 bool send_file(int sockfd, char *filename);
+bool recv_file(int clientfd, char *filename);
 bool send_command(char command, int sockfd);
 
 bool assert_equals(char *actual, char *expected);
 void test_list(char *response);
 void test_upload(int sockfd, char *response);
-void test_download(char *response);
+void test_download(int sockfd, char *response);
 void test_delete(int sockfd, char *response);
 void test_quit(char *response);
 void test_commands(char command, int sockfd);
@@ -281,6 +282,68 @@ bool send_file(int sockfd, char *filename){
     }
   }
 
+  free(buffer);
+  return false;
+}
+
+bool recv_file(int sockfd, char *filename){
+  printf("Filename: %s\n", filename);
+  FILE *file;
+  file = fopen(filename, "w+");
+
+  printf("File opened.\n");
+  
+  int bytes_received = 0;
+  char *buffer;
+  buffer = malloc(sizeof(char) * 256);
+  bzero(buffer, 256);
+
+  if(file == NULL){
+    error_occurred("Error opening file.\n");
+  }
+
+  read(sockfd, buffer, 256);
+  int size = atoi(buffer);
+  int sum_bytes_received = 0;
+  int remaining_bytes = 0;
+
+  while(sum_bytes_received < size) {
+    bzero(buffer, 256);
+    sum_bytes_received += bytes_received;
+    remaining_bytes = size - sum_bytes_received;
+
+    if(remaining_bytes < 256){
+      bytes_received = read(sockfd, buffer, remaining_bytes);
+    }
+
+    else {      
+      bytes_received = read(sockfd, buffer, 256);
+    }
+
+    if(bytes_received > 0){
+      fwrite(buffer, 1, bytes_received, file);
+    }
+  
+    if(bytes_received < 0){
+      printf("Error reading file.");
+      break;
+    }
+
+    if(bytes_received == 0){
+      break;
+    }
+  }
+
+  int status = fclose(file);
+  if(status == 0) {
+    printf("File received!\n");
+    return true;
+  }
+
+  else {
+    printf("ERROR: File not closed.\n");
+  }
+
   return false;
 }
 
@@ -329,7 +392,7 @@ void test_commands(char command, int sockfd){
       break;
     case 'D':
       printf("> D\n");
-      test_download(response);
+      test_download(sockfd, response);
       break;
     case 'X':
       printf("> X\n");
@@ -355,7 +418,6 @@ void test_upload(int sockfd, char *response){
 
     char path[] = "client_files/";
     strcat(path, "lorem.txt");
-    printf("File to upload: %s\n", path);
 
     bzero(response, 256);
     recv_response(sockfd, response);
@@ -372,8 +434,6 @@ void test_upload(int sockfd, char *response){
     else {
       printf("Server not yet ready to receive file. Try again.\n");
     }
-
-    // free(filename);
   }
 
   else {
@@ -381,7 +441,37 @@ void test_upload(int sockfd, char *response){
   }
 }
 
-void test_download(char *response){  
+void test_download(int sockfd, char *response){  
+  char path[] = "client_files/";
+  if(assert_equals(response, "ready_download")){
+    printf("What file do you want to download?\n");
+    printf("> readme.txt\n");
+    send_request(sockfd, "readme.txt");
+
+    strcat(path, "readme.txt");
+    printf("New filename: %s\n", path);
+
+    bzero(response, 256);
+    recv_response(sockfd, response);
+    if(assert_equals(response, "ready_to_send")){
+      printf("Downloading file...\n");
+      if(recv_file(sockfd, path) == true){
+        printf("TEST: download()\t PASS\n\n");
+      }
+
+      else{
+        printf("TEST: download()\t FAIL\n\n");        
+      }
+    }
+
+    else {
+      printf("Server not yet ready. Try again.\n");
+    }
+  }
+
+  else {
+    printf("Server is not yet ready. Try again.\n");
+  }
 }
 
 void test_delete(int sockfd, char *response){
@@ -451,9 +541,9 @@ bool assert_equals(char *actual, char *expected){
 
 void test(int sockfd){
   int i;
-  char commands[4] = {'U', 'L', 'X', 'Q'};
+  char commands[5] = {'U', 'L', 'X', 'D', 'Q'};
 
-  for(i = 0; i < 4; i++){
+  for(i = 0; i < 5; i++){
     test_commands(commands[i], sockfd);
     // sleep(5);
   }
