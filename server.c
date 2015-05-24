@@ -307,6 +307,11 @@ void upload(int clientfd, char *request){
   // get filename
   bzero(request, 256);
   request = read_request(clientfd, request);
+  if(strcmp(request, "filename_error") == 0){
+    printf("Client file does not exist. Aborting upload.\n");
+    return;
+  }
+
   printf("Message: %s\n", request);
 
   // ready to receive

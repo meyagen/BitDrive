@@ -346,11 +346,18 @@ void upload(int sockfd, char *response){
   if(strcmp(response, "ready_upload") == 0){
     printf("What file do you want to upload?\n");
     char *filename = get_input();
-    send_request(sockfd, filename);
 
     char path[] = "client_files/";
     strcat(path, filename);
 
+    FILE *file = fopen(path, "r");
+    if(file == NULL){
+      send_request(sockfd, "filename_error");
+      printf("Client file does not exist. Aborting upload.\n");
+      return;
+    }
+
+    send_request(sockfd, filename);
     bzero(response, 256);
     recv_response(sockfd, response);
 
