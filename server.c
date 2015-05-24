@@ -20,14 +20,15 @@ struct File{
 
 char *read_request(int sockfd, char *buffer);
 void write_response(int clientfd, char *response);
+void *recv_file(int clientfd, char *filename);
 void *communicate(void *newsockfd);
 void start_server(int port);
 void free_list(struct File *head);
 struct File* create_list();
 char *list_to_string(struct File *root);
 void list(int clientfd);
-void upload(int clientfd);
-void download(int clientfd);
+void upload(int clientfd, char *request);
+void download(int clientfd, char *request);
 void delete(int clientfd, char *request);
 void quit(int clientfd);
 void invalid_input(int clientfd);
@@ -112,6 +113,14 @@ void process_request(char *request, int clientfd){
     list(clientfd);
   }
 
+  else if(strcmp(request, "UPLOAD") == 0){
+    upload(clientfd, request);
+  }
+
+  else if(strcmp(request, "DOWNLOAD") == 0){
+    download(clientfd, request);
+  }
+
   else if(strcmp(request, "DELETE") == 0){
     delete(clientfd, request);
   }
@@ -144,6 +153,49 @@ char *read_request(int sockfd, char *buffer){
   }
 
   return buffer;
+}
+
+void *recv_file(int clientfd, char *filename){
+  FILE *file;
+
+  file = fopen(strcat(path, filename), "w+");
+  
+  int bytes_received = 0;
+  char *buffer = malloc(sizeof(char) * 256);
+  bzero(buffer, 256);
+
+  if(file == NULL){
+    error_occurred("Error opening file.\n");
+  }
+
+  read(clientfd, buffer, 256);
+  int size = atoi(buffer);
+  int sum_bytes_received = 0;
+  bzero(buffer, 256);
+  printf("Size: %d\n", size);
+
+  while(sum_bytes_received < size) {
+    bytes_received = read(clientfd, buffer, 256);
+    sum_bytes_received += bytes_received;
+    printf("Sum bytes_received: %d\n", sum_bytes_received);
+
+    if(bytes_received > 0){
+      printf("Bytes received: %d\n", bytes_received);
+      fwrite(buffer, 1, bytes_received, file);
+    }
+  
+    if(bytes_received < 0){
+      printf("Error reading file.");
+      break;
+    }
+
+    if(bytes_received == 0){
+      break;
+    }
+  }
+
+  fclose(file);
+  printf("File received!\n");
 }
 
 void write_response(int clientfd, char *response){
@@ -191,14 +243,30 @@ void list(int clientfd){
   }
 }
 
-void upload(int clientfd){
+void upload(int clientfd, char *request){
+  char *response = "ready_upload";
+  printf("Message: %s\n", response);
+  write_response(clientfd, response);
+
+  // get filename
+  bzero(request, 256);
+  request = read_request(clientfd, request);
+  printf("Message: %s\n", request);
+
+  // ready to receive
+  response = "ready_filename";
+  printf("Message: %s\n", response);
+  write_response(clientfd, response);
+
+  // receive the file
+  recv_file(clientfd, request);
 }
 
-void download(int clientfd){
+void download(int clientfd, char *request){
 }
 
 void delete(int clientfd, char *request){
-  char *response = "Which file would you like to delete?\n";
+  char *response = "ready_delete";
   write_response(clientfd, response);
 
   // get file to delete
@@ -212,11 +280,11 @@ void delete(int clientfd, char *request){
   strcat(file_path, request);
 
   if(remove(file_path) == 0){
-    response = "File deleted successfully!\n";
+    response = "delete_success";
   }
 
   else {
-    response = "There was a problem with deleting the file. Please try again later.\n";
+    response = "delete_error";
   }
 
   free(file_path);
