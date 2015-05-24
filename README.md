@@ -6,3 +6,10 @@
 * [Download GTK+](http://www.gtk.org/download/index.php)
 * [GTK3 Documentation](https://developer.gnome.org/gtk3/stable/)
 
+### ToDo
+1. Clone this repository.
+2. Run ```./compile.sh```.
+3. Run server in the format ```./server <port>```.
+4. Run client in the format ```./client <hostname> <port>```.
+5. Enjoy!
+
