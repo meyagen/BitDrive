@@ -19,19 +19,11 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void list(char *response);
 void delete(int sockfd, char *response);
 void download(int sockfd, char *response);
+char *send_filename(char *filename, char *response);
 void upload(int sockfd, char *response);
 bool send_file(int sockfd, char *filename);
 bool recv_file(int clientfd, char *filename);
 bool send_command(char command, int sockfd);
-
-bool assert_equals(char *actual, char *expected);
-void test_list(char *response);
-void test_upload(int sockfd, char *response);
-void test_download(int sockfd, char *response);
-void test_delete(int sockfd, char *response);
-void test_quit(char *response);
-void test_commands(char command, int sockfd);
-void test(int sockfd);
 
 void run_bitdrive(int sockfd);
 void start_client(char *server, int port);
@@ -78,7 +70,6 @@ void start_client(char *server, int port){
   printf("Connected to: %s\n", server);
 
   run_bitdrive(sockfd);
-  // test(sockfd);
   close(sockfd);
 }
 
@@ -362,7 +353,8 @@ void upload(int sockfd, char *response){
 
     bzero(response, 256);
     recv_response(sockfd, response);
-    if(assert_equals(response, "ready_filename")){
+
+    if(strcmp(response, "ready_filename") == 0){
       if(send_file(sockfd, path) == false){
         printf("File not uploaded.\n");
       }
@@ -402,182 +394,4 @@ void download(int sockfd, char *response){
   else {
     printf("Server is not yet ready. Try again.\n");
   }
-}
-
-void test_commands(char command, int sockfd){
-  char *response;
-  response = process_command(command, sockfd);
-
-  switch(command){
-    case 'L':
-      printf("> L\n");
-      printf("Here are the list of files:\n");
-      printf("----------------------------------------------\n"); 
-      printf("%s", response);
-      printf("----------------------------------------------\n");
-      test_list(response);
-      break;
-    case 'U':
-      printf("> U\n");
-      test_upload(sockfd, response);
-      break;
-    case 'D':
-      printf("> D\n");
-      test_download(sockfd, response);
-      break;
-    case 'X':
-      printf("> X\n");
-      test_delete(sockfd, response);
-      break;
-    case 'Q':
-      printf("> Q\n");
-      printf("%s\n", response);
-      test_quit(response);
-      break;
-    default:
-      break;
-  }  
-
-  free(response);
-}
-
-void test_upload(int sockfd, char *response){
-  if(assert_equals(response, "ready_upload")){
-    printf("What file do you want to upload?\n");
-    printf("> lorem.txt\n");
-    send_request(sockfd, "lorem.txt");
-
-    char path[] = "client_files/";
-    strcat(path, "lorem.txt");
-
-    bzero(response, 256);
-    recv_response(sockfd, response);
-    if(assert_equals(response, "ready_filename")){
-      if(send_file(sockfd, path) == true){
-        printf("TEST: upload()\t PASS\n\n");
-      }
-
-      else{
-        printf("TEST: upload()\t FAIL\n\n");        
-      }
-    }
-
-    else {
-      printf("Server not yet ready to receive file. Try again.\n");
-    }
-  }
-
-  else {
-    printf("Server is not yet ready to receive filename. Try again.\n");
-  }
-}
-
-void test_download(int sockfd, char *response){  
-  char path[] = "client_files/";
-  if(assert_equals(response, "ready_download")){
-    printf("What file do you want to download?\n");
-    printf("> readme.txt\n");
-    send_request(sockfd, "readme.txt");
-
-    strcat(path, "readme.txt");
-    printf("New filename: %s\n", path);
-
-    bzero(response, 256);
-    recv_response(sockfd, response);
-    if(assert_equals(response, "ready_to_send")){
-      printf("Downloading file...\n");
-      if(recv_file(sockfd, path) == true){
-        printf("TEST: download()\t PASS\n\n");
-      }
-
-      else{
-        printf("TEST: download()\t FAIL\n\n");        
-      }
-    }
-
-    else {
-      printf("Server not yet ready. Try again.\n");
-    }
-  }
-
-  else {
-    printf("Server is not yet ready. Try again.\n");
-  }
-}
-
-void test_delete(int sockfd, char *response){
-  if(assert_equals(response, "ready_delete")){
-    printf("Which file would you like to delete?\n");
-    printf("> lorem.txt\n");
-    send_request(sockfd, "lorem.txt");
-
-    bzero(response, 256);
-    recv_response(sockfd, response);
-
-    if(assert_equals(response, "delete_success")){
-      printf("File deleted successfully!\n");
-      bzero(response, 256);
-      char *list_response = process_command('L', sockfd);
-      printf("Files remaining:\n%s", list_response);
-
-      if(assert_equals(list_response, "readme.txt (44 bytes)\n")){
-        printf("TEST: delete()\t PASS\n\n");      
-      }
-
-      else{
-        printf("TEST: delete()\t FAIL\t File not deleted (error: remaining files not correct).\n\n");
-      }
-
-      free(list_response);
-    }
-
-    else{
-      printf("TEST: delete()\t FAIL\t File not deleted.\n\n");      
-    }  
-  }
-
-  else{
-    printf("TEST: delete()\t FAIL\t Server not ready.\n\n");
-  }
-}
-
-void test_list(char *response){
-  if(assert_equals(response, "readme.txt (44 bytes)\nlorem.txt (244 bytes)\n")){
-    printf("TEST: list()\t PASS\n\n");
-  }
-
-  else{
-    printf("TEST: list()\t FAIL\n\n");
-  }
-}
-
-void test_quit(char *response){
-  if(assert_equals(response, "Disconnecting...")){
-    printf("Thank you for using BitDrive!\n");
-    printf("TEST: quit()\t PASS\n\n");
-  }
-
-  else{
-    printf("TEST: quit()\t FAIL\n\n");        
-  }
-}
-
-bool assert_equals(char *actual, char *expected){
-  if(strcmp(actual, expected) == 0){
-    return true;
-  }
-
-  return false;
-}
-
-void test(int sockfd){
-  int i;
-  char commands[5] = {'U', 'L', 'X', 'D', 'Q'};
-
-  for(i = 0; i < 5; i++){
-    test_commands(commands[i], sockfd);
-    // sleep(5);
-  }
-
-  return;
 }
