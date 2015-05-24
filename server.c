@@ -5,16 +5,16 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <dirent.h> 
-#include <unistd.h> 
+#include <dirent.h>
+#include <unistd.h>
 #include <sys/stat.h>
-#include <pthread.h> 
+#include <pthread.h>
 
-const NUM_CLIENTS = 2;
+const int NUM_CLIENTS = 2;
 int client_number;
 struct File{
   char *filename;
-  long long size; 
+  long long size;
   struct File *next;
 };
 
@@ -59,8 +59,6 @@ void start_server(int port){
   struct sockaddr_in server_addr, client_addr;
   socklen_t client_len;
   int sockfd, newsockfd, status;
-  int clients[NUM_CLIENTS];
-  int ret, i;
   pthread_t thread_id[NUM_CLIENTS];
 
   /* Initial Values */
@@ -74,7 +72,7 @@ void start_server(int port){
 
   status = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
   if(status < 0) {
-    error("ERROR on binding");
+    error_occurred("ERROR on binding");
   }
 
   listen(sockfd, 5);
@@ -90,13 +88,8 @@ void start_server(int port){
         error_occurred("ERROR on accept");
       }
 
-      clients[client_number] = client_number;
-      ret = pthread_create(
-                    &thread_id[client_number],
-                    NULL,
-                    communicate,
-                    (void*) &newsockfd
-                    );
+      pthread_create(&thread_id[client_number],
+                    NULL, communicate, (void*) &newsockfd);
 
       client_number++;
     }
@@ -107,7 +100,6 @@ void start_server(int port){
 }
 
 void process_request(char *request, int clientfd){
-  int status;
   printf("Message: %s\n", request);
   if(strcmp(request, "LIST") == 0){
     list(clientfd);
@@ -124,7 +116,7 @@ void process_request(char *request, int clientfd){
   else if(strcmp(request, "DELETE") == 0){
     delete(clientfd, request);
   }
-  
+
   else if(strcmp(request, "QUIT") == 0){
     quit(clientfd);
   }
@@ -159,7 +151,7 @@ void *recv_file(int clientfd, char *filename){
   char path[] = "server_files/";
   FILE *file;
   file = fopen(strcat(path, filename), "w+");
-  
+
   int bytes_received = 0;
   char *buffer;
   buffer = malloc(sizeof(char) * 256);
@@ -183,14 +175,14 @@ void *recv_file(int clientfd, char *filename){
       bytes_received = read(clientfd, buffer, remaining_bytes);
     }
 
-    else {      
+    else {
       bytes_received = read(clientfd, buffer, 256);
     }
 
     if(bytes_received > 0){
       fwrite(buffer, 1, bytes_received, file);
     }
-  
+
     if(bytes_received < 0){
       printf("Error reading file.");
       break;
@@ -205,19 +197,19 @@ void *recv_file(int clientfd, char *filename){
   if(status == 0) {
     printf("File received!\n");
   }
-
   else {
     printf("ERROR: File not closed.\n");
   }
 
   free(buffer);
-  // free(file);
+// free(file);
+  return 0;
 }
 
 void *send_file(int clientfd, char *filename){
   FILE *file;
   file = fopen(filename, "rb");
-  
+
   int bytes_read = 0;
   char *buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
@@ -255,6 +247,7 @@ void *send_file(int clientfd, char *filename){
 
   fclose(file);
   free(buffer);
+  return 0;
 }
 
 void write_response(int clientfd, char *response){
@@ -265,7 +258,7 @@ void write_response(int clientfd, char *response){
 }
 
 void *communicate(void *newsockfd){
-  int sockfd = *((int*)newsockfd); 
+  int sockfd = *((int*)newsockfd);
   printf("Connected to client %d...\n", sockfd);
   bool server_run = true;
   char *buffer = malloc(sizeof(char) * 256);
@@ -285,7 +278,7 @@ void *communicate(void *newsockfd){
 
   free(buffer);
   close(sockfd);
-  return;
+  return 0;
 }
 
 void list(int clientfd){
@@ -295,7 +288,7 @@ void list(int clientfd){
     write_response(clientfd, "(No files found in the server.)\n");
   }
 
-  else {    
+  else {
     printf("%s\n", response);
     write_response(clientfd, response);
     free(response);
@@ -355,7 +348,7 @@ void download(int clientfd, char *request){
   printf("Message: %s\n", request);
 
   if(strcmp(request, "ready_to_receive") == 0){
-    send_file(clientfd, path);  
+    send_file(clientfd, path);
   }
 
   else {
@@ -437,7 +430,7 @@ struct File* create_list(){
 
   if(dir){
     while((ent = readdir(dir)) != NULL){
-      if(ent->d_type == 8){ 
+      if(ent->d_type == 8){
         if(current->filename != NULL){
           struct File *file;
           file = (struct File *)malloc(sizeof(struct File));
@@ -463,7 +456,7 @@ struct File* create_list(){
   }
 
   else {
-    printf("There are no files available for download.\n");   
+    printf("There are no files available for download.\n");
   }
 
   free(ent);
@@ -492,12 +485,12 @@ char *list_to_string(struct File *root){
 
   char *list_string = malloc(size + (2*file_counter) + file_counter);
   strcpy(list_string, "\0");
-  current = root; 
+  current = root;
   while (current != NULL){
     //convert current->size to string
     char file_size[20];
     sprintf(file_size, "%llu", current->size);
-    
+
     strcat(list_string, current->filename);
     strcat(list_string, " (");
     strcat(list_string, file_size);
@@ -508,4 +501,3 @@ char *list_to_string(struct File *root){
   free_list(root);
   return list_string;
 }
-
