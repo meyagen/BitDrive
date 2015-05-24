@@ -231,6 +231,7 @@ void *send_file(int clientfd, char *filename){
   sprintf(buffer, "%d", size);
   write(clientfd, buffer, 256);
   fseek(file, 0L, SEEK_SET);
+
   while(true){
     bzero(buffer, 256);
     bytes_read = fread(buffer, 1, 256, file);
@@ -252,6 +253,7 @@ void *send_file(int clientfd, char *filename){
     }
   }
 
+  fclose(file);
   free(buffer);
 }
 
@@ -325,10 +327,9 @@ void upload(int clientfd, char *request){
 }
 
 void download(int clientfd, char *request){
-  char *response = "ready_download";
   char path[] = "server_files/";
-  printf("Message: %s\n", response);
-  write_response(clientfd, response);
+  printf("Message: %s\n", "ready_download");
+  write_response(clientfd, "ready_download");
 
   // get filename
   bzero(request, 256);
@@ -342,12 +343,12 @@ void download(int clientfd, char *request){
     return;
   }
 
+  fclose(file);
   printf("Message: %s\n", request);
 
   // ready to send
-  response = "ready_to_send";
-  printf("Message: %s\n", response);
-  write_response(clientfd, response);
+  write_response(clientfd, "ready_download");
+  printf("Message: %s\n", "ready_download");
 
   // send the file
   send_file(clientfd, path);

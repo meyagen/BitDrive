@@ -173,11 +173,12 @@ char *process_command(char command, int sockfd){
       break;
   }
 
-  if(command != 'V'){
+  if(command == 'L' || command == 'U' || command == 'D' || command == 'X' || command == 'Q'){
     send_request(sockfd, buffer);
     return recv_response(sockfd, response);    
   }
 
+  free(response);
   return NULL;
 }
 
@@ -203,6 +204,9 @@ bool send_command(char command, int sockfd){
       break;
     case 'Q':
       printf("%s\n", response);
+      break;
+    default:
+      printf("Invalid command.\n");
       break;
   }  
 
@@ -316,6 +320,7 @@ bool recv_file(int sockfd, char *filename){
     printf("ERROR: File not closed.\n");
   }
 
+  fclose(file);
   return false;
 }
 
@@ -394,6 +399,7 @@ void download(int sockfd, char *response){
 
     bzero(response, 256);
     recv_response(sockfd, response);
+
     if(strcmp(response, "filename_error") == 0){
       printf("File does not exist. Aborting download.\n");
       free(filename);
@@ -406,15 +412,14 @@ void download(int sockfd, char *response){
       }
     }
 
-    else {
-      printf("Server not yet ready. Try again.\n");
+    else{
+      printf("Response: %s\n", response);
     }
 
-  free(filename);
+    free(filename);
   }
 
   else {
     printf("Server is not yet ready. Try again.\n");
   }
-
 }
