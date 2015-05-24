@@ -16,6 +16,7 @@ void send_request(int sockfd, char *buffer);
 char *recv_response(int sockfd, char *response);
 char *process_command(char command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
+void list(char *response);
 void delete(int sockfd, char *response);
 void download(int sockfd, char *response);
 void upload(int sockfd, char *response);
@@ -87,6 +88,72 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
   socket_addr->sin_port = port;
 }
 
+char get_command(){
+  char command;
+  printf("> ");
+  scanf("%s", &command);
+  return command;
+}
+
+char *get_input(){
+  printf("> ");
+  char *input = malloc(sizeof(char) * 256);
+  scanf("%s", input);
+  return input;
+}
+
+void send_request(int sockfd, char *buffer){
+  int status = write(sockfd, buffer, strlen(buffer));
+  if(status < 0) {
+    error_occurred("ERROR writing to socket");
+  }  
+}
+
+char *recv_response(int sockfd, char *response){
+  int status = read(sockfd, response, 255); //receive the response
+  if(status < 0){
+    error_occurred("ERROR reading from socket");
+  }
+
+  return response;  
+}
+
+void display_welcome(){
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+  printf("Welcome to BitDrive! \n");
+  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+}
+
+void display_commands(){
+  printf("\nCommands:\n");
+  printf("==================================================================\n");  
+  printf("[L] LIST: List the names of the files currently stored in the server.\n");
+  printf("[U] UPLOAD: Upload a file to the server.\n");
+  printf("[D] DOWNLOAD: Download a file from the server.\n");
+  printf("[X] DELETE: Delete a file from the server.\n");
+  printf("[V] VIEW: View list of commands.\n");
+  printf("[Q] QUIT: Exit BitDrive.\n\n");
+}
+
+void error_occurred(const char *msg){
+  perror(msg);
+  exit(0);
+}
+
+void run_bitdrive(int sockfd){
+  bool is_running = true;
+  char command;
+  display_commands();
+
+  while(is_running){
+    printf("\nWhat would you like to do?\n");
+    command = get_command();
+    is_running = send_command(command, sockfd);
+  }    
+
+  return;
+}
+
 char *process_command(char command, int sockfd){
   char *buffer;
   char *response;
@@ -123,49 +190,13 @@ char *process_command(char command, int sockfd){
   return NULL;
 }
 
-void send_request(int sockfd, char *buffer){
-  int status = write(sockfd, buffer, strlen(buffer));
-  if(status < 0) {
-    error_occurred("ERROR writing to socket");
-  }  
-}
-
-char *recv_response(int sockfd, char *response){
-  int status = read(sockfd, response, 255); //receive the response
-  if(status < 0){
-    error_occurred("ERROR reading from socket");
-  }
-
-  return response;  
-}
-
-void display_welcome(){
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-  printf("Welcome to BitDrive! \n");
-  printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-}
-
-void display_commands(){
-  printf("\nCommands:\n");
-  printf("==================================================================\n");  
-  printf("[L] LIST: List the names of the files currently stored in the server.\n");
-  printf("[U] UPLOAD: Upload a file to the server.\n");
-  printf("[D] DOWNLOAD: Download a file from the server.\n");
-  printf("[X] DELETE: Delete a file from the server.\n");
-  printf("[V] VIEW: View list of commands.\n");
-  printf("[Q] QUIT: Exit BitDrive.\n\n");
-}
-
 bool send_command(char command, int sockfd){
   char *response;
   response = process_command(command, sockfd);
 
   switch(command){
     case 'L':
-      printf("Here are the list of files:\n");
-      printf("----------------------------------------------\n"); 
-      printf("%s", response);
-      printf("----------------------------------------------\n");
+      list(response);
       break;
     case 'U':
       upload(sockfd, response);
@@ -192,58 +223,6 @@ bool send_command(char command, int sockfd){
 
   free(response);
   return true;
-}
-
-char get_command(){
-  char command;
-  printf("> ");
-  scanf("%s", &command);
-  return command;
-}
-
-char *get_input(){
-  printf("> ");
-  char *input = malloc(sizeof(char) * 256);
-  scanf("%s", input);
-  return input;
-}
-
-void error_occurred(const char *msg){
-  perror(msg);
-  exit(0);
-}
-
-void run_bitdrive(int sockfd){
-  bool is_running = true;
-  char command;
-  display_commands();
-
-  while(is_running){
-    printf("\nWhat would you like to do?\n");
-    command = get_command();
-    is_running = send_command(command, sockfd);
-  }    
-
-  return;
-}
-
-void delete(int sockfd, char *response){
-  if(strcmp(response, "ready_delete") == 0){
-    printf("Which file would you like to delete?\n");
-    char *file = get_input();
-    send_request(sockfd, file);
-    free(file);
-
-    bzero(response, 256);
-    recv_response(sockfd, response);
-    if(strcmp(response, "delete_success") == 0){
-      printf("File deleted successfully!\n");
-    }
-
-    else{
-      printf("There was an error deleting the file. Please try again.\n");
-    }
-  }
 }
 
 bool send_file(int sockfd, char *filename){
@@ -344,6 +323,32 @@ bool recv_file(int sockfd, char *filename){
   }
 
   return false;
+}
+
+void list(char *response){
+  printf("Here are the list of files:\n");
+  printf("----------------------------------------------\n"); 
+  printf("%s", response);
+  printf("----------------------------------------------\n");  
+}
+
+void delete(int sockfd, char *response){
+  if(strcmp(response, "ready_delete") == 0){
+    printf("Which file would you like to delete?\n");
+    char *file = get_input();
+    send_request(sockfd, file);
+    free(file);
+
+    bzero(response, 256);
+    recv_response(sockfd, response);
+    if(strcmp(response, "delete_success") == 0){
+      printf("File deleted successfully!\n");
+    }
+
+    else{
+      printf("There was an error deleting the file. Please try again.\n");
+    }
+  }
 }
 
 void upload(int sockfd, char *response){
