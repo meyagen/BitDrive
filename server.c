@@ -157,11 +157,11 @@ char *read_request(int sockfd, char *buffer){
 
 void *recv_file(int clientfd, char *filename){
   FILE *file;
-
   file = fopen(strcat(path, filename), "w+");
   
   int bytes_received = 0;
-  char *buffer = malloc(sizeof(char) * 256);
+  char *buffer;
+  buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
 
   if(file == NULL){
@@ -200,8 +200,15 @@ void *recv_file(int clientfd, char *filename){
     }
   }
 
-  fclose(file);
-  printf("File received!\n");
+  int status = fclose(file);
+  if(status == 0) {
+    printf("File received!\n");
+  }
+
+  else {
+    printf("ERROR: File not closed.\n");
+  }
+
   // free(buffer);
 }
 
@@ -363,6 +370,8 @@ struct File* create_list(){
         free(file_path);
       }
     }
+
+    closedir(dir);
   }
 
   else {
@@ -370,7 +379,7 @@ struct File* create_list(){
   }
 
   free(ent);
-  free(dir);
+  // free(dir);
   return root;
 }
 

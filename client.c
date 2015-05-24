@@ -113,8 +113,12 @@ char *process_command(char command, int sockfd){
       break;
   }
 
-  send_request(sockfd, buffer);
-  return recv_response(sockfd, response);
+  if(command != 'V'){
+    send_request(sockfd, buffer);
+    return recv_response(sockfd, response);    
+  }
+
+  return NULL;
 }
 
 void send_request(int sockfd, char *buffer){
@@ -162,17 +166,18 @@ bool send_command(char command, int sockfd){
       printf("----------------------------------------------\n");
       break;
     case 'U':
+      upload(sockfd, response);
       break;
     case 'D':
-      upload(sockfd, response);
       break;
     case 'X':
       delete(sockfd, response);
       break;
-    case 'Q':
-      printf("%s\n", response);
     case 'V':
       display_commands();
+      break;
+    case 'Q':
+      printf("%s\n", response);
       break;
   }  
 
@@ -448,7 +453,7 @@ void test(int sockfd){
 
   for(i = 0; i < 4; i++){
     test_commands(commands[i], sockfd);
-    // sleep(5);
+    sleep(5);
   }
 
   return;
