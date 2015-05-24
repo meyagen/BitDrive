@@ -347,11 +347,20 @@ void download(int clientfd, char *request){
   printf("Message: %s\n", request);
 
   // ready to send
-  write_response(clientfd, "ready_download");
-  printf("Message: %s\n", "ready_download");
+  write_response(clientfd, "ready_to_send");
+  printf("Message: %s\n", "ready_to_send");
 
-  // send the file
-  send_file(clientfd, path);
+  bzero(request, 256);
+  request = read_request(clientfd, request);
+  printf("Message: %s\n", request);
+
+  if(strcmp(request, "ready_to_receive") == 0){
+    send_file(clientfd, path);  
+  }
+
+  else {
+    printf("Client not ready. Aborting download.\n");
+  }
 }
 
 void delete(int clientfd, char *request){

@@ -407,13 +407,10 @@ void download(int sockfd, char *response){
     }
 
     else if(strcmp(response, "ready_to_send") == 0){
+      send_request(sockfd, "ready_to_receive");
       if(recv_file(sockfd, path) == false){
         printf("File not downloaded. Try again\n");
       }
-    }
-
-    else{
-      printf("Response: %s\n", response);
     }
 
     free(filename);
