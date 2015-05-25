@@ -42,7 +42,7 @@ int main(int argc, char* argv[]){
 void start_client(char *server, int port){
   struct sockaddr_in server_addr;
   struct hostent *host_addr;
-  int sockfd, status, n;
+  int sockfd, status;
 
   set_sockaddr(&server_addr, htons(port));
 
@@ -139,7 +139,6 @@ void run_bitdrive(int sockfd){
 char *process_command(char *command, int sockfd){
   char *buffer;
   char *response;
-  int status;
 
   response = malloc(sizeof(char) * 256);
   bzero(response, 256);
