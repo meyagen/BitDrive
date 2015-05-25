@@ -26,8 +26,7 @@ void *communicate(void *newsockfd);
 void start_server(int port);
 void free_list(struct File *head);
 struct File* create_list();
-char *list_to_string(struct File *root);
-void list(int clientfd);
+void list(struct File *root, int clientfd);
 void upload(int clientfd, char *request);
 void download(int clientfd, char *request);
 void delete(int clientfd, char *request);
@@ -102,7 +101,7 @@ void start_server(int port){
 void process_request(char *request, int clientfd){
   printf("Client %d: %s\n", clientfd, request);
   if(strcmp(request, "LIST") == 0){
-    list(clientfd);
+    list(create_list(), clientfd);
   }
 
   else if(strcmp(request, "UPLOAD") == 0){
@@ -202,7 +201,7 @@ void *recv_file(int clientfd, char *filename){
   }
 
   free(buffer);
-// free(file);
+
   return 0;
 }
 
@@ -279,20 +278,6 @@ void *communicate(void *newsockfd){
   free(buffer);
   close(sockfd);
   return 0;
-}
-
-void list(int clientfd){
-  char *response = list_to_string(create_list());
-  if(strcmp(response, "\0") == 0){
-    printf("No files found.\n");
-    write_response(clientfd, "(No files found in the server.)\n");
-  }
-
-  else {
-    printf("%s\n", response);
-    write_response(clientfd, response);
-    free(response);
-  }
 }
 
 void upload(int clientfd, char *request){
@@ -464,7 +449,7 @@ struct File* create_list(){
   return root;
 }
 
-char *list_to_string(struct File *root){
+void list(struct File *root, int clientfd){
   struct File *current;
   current = root;
   long long size = 0;
@@ -472,10 +457,13 @@ char *list_to_string(struct File *root){
 
   // check if list of files is empty first
   if(current->filename == NULL){
+    printf("No files found.\n");
+    write_response(clientfd, "(No files found in the server.)\n");    
     free_list(root);
-    return "\0";
+    return;
   }
 
+  printf("Getting size...\n");
   // get size for malloc
   while (current != NULL){
     size += sizeof(*current);
@@ -483,12 +471,18 @@ char *list_to_string(struct File *root){
     current = current->next;
   }
 
-  char *list_string = malloc(size + (2*file_counter) + file_counter);
+  int count = 0;
+  printf("Files: %d\n", file_counter);
+  printf("Converting to string...\n");
+  char *list_string = malloc(size + (20*file_counter) + file_counter);
   strcpy(list_string, "\0");
   current = root;
   while (current != NULL){
+    printf("Converting file...\n");
+    count++;
+    printf("%d\n", count);
     //convert current->size to string
-    char file_size[20];
+    char *file_size = malloc(sizeof(long long unsigned) * current->size);
     sprintf(file_size, "%llu", current->size);
 
     strcat(list_string, current->filename);
@@ -496,8 +490,14 @@ char *list_to_string(struct File *root){
     strcat(list_string, file_size);
     strcat(list_string, " bytes)\n");
     current = current->next;
+    free(file_size);
   }
 
+  printf("Freeing root...\n");
   free_list(root);
-  return list_string;
+
+  printf("%s\n", list_string);
+  printf("Response length: %zu\n", strlen(list_string));
+  write_response(clientfd, list_string);
+  free(list_string);
 }
