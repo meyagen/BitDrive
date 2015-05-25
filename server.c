@@ -138,7 +138,8 @@ void error_occurred(const char *msg){
 }
 
 char *read_request(int sockfd, char *buffer){
-  int status = read(sockfd, buffer, 255);
+  bzero(buffer, 1024);
+  int status = read(sockfd, buffer, 1024);
   if(status < 0) {
     error_occurred("ERROR reading from socket");
   }
@@ -260,8 +261,8 @@ void *communicate(void *newsockfd){
   int sockfd = *((int*)newsockfd);
   printf("Connected to client %d...\n", sockfd);
   bool server_run = true;
-  char *buffer = malloc(sizeof(char) * 256);
-  bzero(buffer, 256);
+  char *buffer = malloc(sizeof(char) * 1024);
+  bzero(buffer, 1024);
 
   // write_response(sockfd, "connected");
 
@@ -271,8 +272,6 @@ void *communicate(void *newsockfd){
     if(strcmp(buffer, "QUIT") == 0){
       server_run = false;
     }
-
-    bzero(buffer, 256);
   }
 
   free(buffer);
@@ -286,7 +285,6 @@ void upload(int clientfd, char *request){
   write_response(clientfd, response);
 
   // get filename
-  bzero(request, 256);
   request = read_request(clientfd, request);
   if(strcmp(request, "filename_error") == 0){
     printf("File does not exist. Aborting upload.\n");
@@ -310,7 +308,6 @@ void download(int clientfd, char *request){
   write_response(clientfd, "ready_download");
 
   // get filename
-  bzero(request, 256);
   request = read_request(clientfd, request);
 
   strcat(path, request);
@@ -328,7 +325,6 @@ void download(int clientfd, char *request){
   write_response(clientfd, "ready_to_send");
   printf("Client %d: %s\n", clientfd, "ready_to_send");
 
-  bzero(request, 256);
   request = read_request(clientfd, request);
   printf("Client %d: %s\n", clientfd, request);
 
@@ -347,7 +343,6 @@ void delete(int clientfd, char *request){
   write_response(clientfd, response);
 
   // get file to delete
-  bzero(request, 256);
   request = read_request(clientfd, request);
   printf("Client %d: %s\n", clientfd, request);
 
@@ -384,14 +379,11 @@ void free_list(struct File* head){
   int counter = 0;
   while (head != NULL) {
     tmp = head;
-
     counter++;
-    // printf("%d %s\n", counter, tmp->filename);
 
     head = head->next;
     free(tmp->filename);
     free(tmp);
-    // printf("Freed temp.\n");
   }
 
   free(head);
@@ -463,7 +455,6 @@ void list(struct File *root, int clientfd){
     return;
   }
 
-  printf("Getting size...\n");
   // get size for malloc
   while (current != NULL){
     size += sizeof(*current);
@@ -471,16 +462,10 @@ void list(struct File *root, int clientfd){
     current = current->next;
   }
 
-  int count = 0;
-  printf("Files: %d\n", file_counter);
-  printf("Converting to string...\n");
   char *list_string = malloc(size + (20*file_counter) + file_counter);
   strcpy(list_string, "\0");
   current = root;
   while (current != NULL){
-    printf("Converting file...\n");
-    count++;
-    printf("%d\n", count);
     //convert current->size to string
     char *file_size = malloc(sizeof(long long unsigned) * current->size);
     sprintf(file_size, "%llu", current->size);
@@ -493,11 +478,9 @@ void list(struct File *root, int clientfd){
     free(file_size);
   }
 
-  printf("Freeing root...\n");
   free_list(root);
 
-  printf("%s\n", list_string);
-  printf("Response length: %zu\n", strlen(list_string));
+  printf("Files found:\n%s\n", list_string);
   write_response(clientfd, list_string);
   free(list_string);
 }

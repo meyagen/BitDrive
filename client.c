@@ -93,7 +93,8 @@ void send_request(int sockfd, char *buffer){
 }
 
 char *recv_response(int sockfd, char *response){
-  int status = read(sockfd, response, 1024); //receive the response
+  bzero(response, 2048);
+  int status = read(sockfd, response, 2048); //receive the response
   if(status < 0){
     error_occurred("ERROR reading from socket");
   }
@@ -140,8 +141,8 @@ char *process_command(char *command, int sockfd){
   char *buffer;
   char *response;
 
-  response = malloc(sizeof(char) * 1024);
-  bzero(response, 1024);
+  response = malloc(sizeof(char) * 2048);
+  bzero(response, 2048);
 
   if(strcmp("L", command) == 0){
     buffer = "LIST";
@@ -333,7 +334,6 @@ void delete(int sockfd, char *response){
     send_request(sockfd, file);
     free(file);
 
-    bzero(response, 1024);
     recv_response(sockfd, response);
     if(strcmp(response, "delete_success") == 0){
       printf("File deleted successfully!\n");
@@ -363,7 +363,6 @@ void upload(int sockfd, char *response){
 
     fclose(file);
     send_request(sockfd, filename);
-    bzero(response, 1024);
     recv_response(sockfd, response);
 
     if(strcmp(response, "ready_filename") == 0){
@@ -391,8 +390,6 @@ void download(int sockfd, char *response){
     char *filename = get_input();
     send_request(sockfd, filename);
     strcat(path, filename);
-
-    bzero(response, 1024);
     recv_response(sockfd, response);
 
     if(strcmp(response, "filename_error") == 0){
