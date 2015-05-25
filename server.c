@@ -100,7 +100,7 @@ void start_server(int port){
 }
 
 void process_request(char *request, int clientfd){
-  printf("Message: %s\n", request);
+  printf("Client %d: %s\n", clientfd, request);
   if(strcmp(request, "LIST") == 0){
     list(clientfd);
   }
@@ -297,7 +297,7 @@ void list(int clientfd){
 
 void upload(int clientfd, char *request){
   char *response = "ready_upload";
-  printf("Message: %s\n", response);
+  printf("Client %d: %s\n", clientfd, response);
   write_response(clientfd, response);
 
   // get filename
@@ -308,11 +308,11 @@ void upload(int clientfd, char *request){
     return;
   }
 
-  printf("Message: %s\n", request);
+  printf("Client %d: %s\n", clientfd, request);
 
   // ready to receive
   response = "ready_filename";
-  printf("Message: %s\n", response);
+  printf("Client %d: %s\n", clientfd, response);
   write_response(clientfd, response);
 
   // receive the file
@@ -321,7 +321,7 @@ void upload(int clientfd, char *request){
 
 void download(int clientfd, char *request){
   char path[] = "server_files/";
-  printf("Message: %s\n", "ready_download");
+  printf("Client %d: %s\n", clientfd, "ready_download");
   write_response(clientfd, "ready_download");
 
   // get filename
@@ -337,15 +337,15 @@ void download(int clientfd, char *request){
   }
 
   fclose(file);
-  printf("Message: %s\n", request);
+  printf("Client %d: %s\n", clientfd, request);
 
   // ready to send
   write_response(clientfd, "ready_to_send");
-  printf("Message: %s\n", "ready_to_send");
+  printf("Client %d:%s\n", clientfd, "ready_to_send");
 
   bzero(request, 256);
   request = read_request(clientfd, request);
-  printf("Message: %s\n", request);
+  printf("Client %d:%s\n", clientfd, request);
 
   if(strcmp(request, "ready_to_receive") == 0){
     send_file(clientfd, path);
@@ -364,7 +364,7 @@ void delete(int clientfd, char *request){
   // get file to delete
   bzero(request, 256);
   request = read_request(clientfd, request);
-  printf("Message: %s\n", request);
+  printf("Client %d: %s\n", clientfd, request);
 
   // delete file
   char *file_path = malloc(strlen(path) + strlen(request) + 1);
