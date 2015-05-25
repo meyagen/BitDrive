@@ -10,11 +10,10 @@
 
 void display_welcome();
 void display_commands();
-char get_command();
 char *get_input();
 void send_request(int sockfd, char *buffer);
 char *recv_response(int sockfd, char *response);
-char *process_command(char command, int sockfd);
+char *process_command(char *command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
 void list(char *response);
 void delete(int sockfd, char *response);
@@ -23,7 +22,7 @@ char *send_filename(char *filename, char *response);
 void upload(int sockfd, char *response);
 bool send_file(int sockfd, char *filename);
 bool recv_file(int clientfd, char *filename);
-bool send_command(char command, int sockfd);
+bool send_command(char *command, int sockfd);
 
 void run_bitdrive(int sockfd);
 void start_client(char *server, int port);
@@ -79,13 +78,6 @@ void set_sockaddr(struct sockaddr_in *socket_addr, int port) {
   socket_addr->sin_port = port;
 }
 
-char get_command(){
-  char command;
-  printf("> ");
-  scanf("%s", &command);
-  return command;
-}
-
 char *get_input(){
   printf("> ");
   char *input = malloc(sizeof(char) * 256);
@@ -133,46 +125,45 @@ void error_occurred(const char *msg){
 
 void run_bitdrive(int sockfd){
   bool is_running = true;
-  char command;
   display_commands();
 
   while(is_running){
     printf("\nWhat would you like to do?\n");
-    command = get_command();
+    char *command = get_input();
     is_running = send_command(command, sockfd);
   }
 
   return;
 }
 
-char *process_command(char command, int sockfd){
+char *process_command(char *command, int sockfd){
   char *buffer;
   char *response;
 
   response = malloc(sizeof(char) * 256);
   bzero(response, 256);
 
-  switch(command){
-    case 'L':
-      buffer = "LIST";
-      break;
-    case 'U':
-      buffer = "UPLOAD";
-      break;
-    case 'D':
-      buffer = "DOWNLOAD";
-      break;
-    case 'X':
-      buffer = "DELETE";
-      break;
-    case 'Q':
-      buffer = "QUIT";
-      break;
-    default:
-      break;
+  if(strcmp("L", command) == 0){
+    buffer = "LIST";
   }
 
-  if(command == 'L' || command == 'U' || command == 'D' || command == 'X' || command == 'Q'){
+  else if(strcmp("U", command) == 0){
+    buffer = "UPLOAD";
+  }
+
+  else if(strcmp("D", command) == 0){
+    buffer = "DOWNLOAD";
+  }
+
+  else if(strcmp("X", command) == 0){
+    buffer = "DELETE";
+  }
+
+  else if(strcmp("Q", command) == 0){
+    buffer = "QUIT";
+  }
+
+  if(strcmp(command, "L") == 0 || strcmp(command, "U") == 0 || strcmp(command, "D") == 0 || strcmp(command, "X") == 0 || strcmp(command, "Q") == 0){
     send_request(sockfd, buffer);
     return recv_response(sockfd, response);
   }
@@ -181,41 +172,47 @@ char *process_command(char command, int sockfd){
   return NULL;
 }
 
-bool send_command(char command, int sockfd){
+bool send_command(char *command, int sockfd){
   char *response;
   response = process_command(command, sockfd);
 
-  switch(command){
-    case 'L':
+    if(strcmp("L", command) == 0){
       list(response);
-      break;
-    case 'U':
-      upload(sockfd, response);
-      break;
-    case 'D':
-      download(sockfd, response);
-      break;
-    case 'X':
-      delete(sockfd, response);
-      break;
-    case 'V':
-      display_commands();
-      break;
-    case 'Q':
-      printf("%s\n", response);
-      break;
-    default:
-      printf("Invalid command.\n");
-      break;
-  }
+    }
 
-  if(command == 'Q' && strcmp(response, "Disconnecting...") == 0){
+    else if(strcmp("U", command) == 0){
+      upload(sockfd, response);
+    }
+
+    else if(strcmp("D", command) == 0){
+      download(sockfd, response);
+    }
+
+    else if(strcmp("X", command) == 0){
+      delete(sockfd, response);
+    }
+
+    else if(strcmp("V", command) == 0){
+      display_commands();
+    }
+
+    else if(strcmp("Q", command) == 0){
+      printf("%s\n", response);
+    }
+
+    else{
+      printf("Invalid input.\n");
+    }
+
+  if(strcmp(command, "Q")  == 0 && strcmp(response, "Disconnecting...") == 0){
     free(response);
     printf("Thank you for using BitDrive!\n");
+    free(command);
     return false;
   }
 
   free(response);
+  free(command);
   return true;
 }
 
