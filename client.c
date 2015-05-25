@@ -89,7 +89,7 @@ void send_request(int sockfd, char *buffer){
   int status = write(sockfd, buffer, strlen(buffer));
   if(status < 0) {
     error_occurred("ERROR writing to socket");
-  }  
+  }
 }
 
 char *recv_response(int sockfd, char *response){
@@ -99,7 +99,7 @@ char *recv_response(int sockfd, char *response){
     error_occurred("ERROR reading from socket");
   }
 
-  return response;  
+  return response;
 }
 
 void display_welcome(){
@@ -110,7 +110,7 @@ void display_welcome(){
 
 void display_commands(){
   printf("\nCommands:\n");
-  printf("==================================================================\n");  
+  printf("==================================================================\n");
   printf("[L] LIST: List the names of the files currently stored in the server.\n");
   printf("[U] UPLOAD: Upload a file to the server.\n");
   printf("[D] DOWNLOAD: Download a file from the server.\n");
@@ -132,7 +132,7 @@ void run_bitdrive(int sockfd){
     printf("\nWhat would you like to do?\n");
     char *command = get_input();
     is_running = send_command(command, sockfd);
-  }    
+  }
 
   return;
 }
@@ -166,7 +166,7 @@ char *process_command(char *command, int sockfd){
 
   if(strcmp(command, "L") == 0 || strcmp(command, "U") == 0 || strcmp(command, "D") == 0 || strcmp(command, "X") == 0 || strcmp(command, "Q") == 0){
     send_request(sockfd, buffer);
-    return recv_response(sockfd, response);    
+    return recv_response(sockfd, response);
   }
 
   free(response);
@@ -219,8 +219,12 @@ bool send_command(char *command, int sockfd){
 bool send_file(int sockfd, char *filename){
   FILE *file;
   file = fopen(filename, "rb");
-  
+
   int bytes_read = 0;
+  int bytes_written = 0;
+  int curr_percentage = 0;
+  int curr_value = 0;
+  int size = 0;
   char *buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
 
@@ -229,21 +233,34 @@ bool send_file(int sockfd, char *filename){
   }
 
   fseek(file, 0L, SEEK_END);
-  int size = ftell(file);
+  size = ftell(file);
   sprintf(buffer, "%d", size);
   write(sockfd, buffer, 256);
   fseek(file, 0L, SEEK_SET);
+
+  printf("[");
   while(true){
     bzero(buffer, 256);
     bytes_read = fread(buffer, 1, 256, file);
 
     if(bytes_read > 0){
+      bytes_written += bytes_read;
+      curr_percentage = (((double)bytes_written)/((double)size))*100;
+
+      if((curr_percentage > 0) && (curr_percentage > curr_value)) {
+        if((curr_percentage % 10) == 0) {
+          curr_value = curr_percentage;
+          printf("===");
+        }
+      }
+
       write(sockfd, buffer, bytes_read);
     }
 
     if(bytes_read < 256){
       if(feof(file)){
-        printf("Upload done!\n");
+        printf("] 100%%");
+        printf("\nUpload done!\n");
         free(buffer);
         fclose(file);
         return true;
@@ -263,7 +280,7 @@ bool send_file(int sockfd, char *filename){
 bool recv_file(int sockfd, char *filename){
   FILE *file;
   file = fopen(filename, "w+");
-  
+
   int bytes_received = 0;
   char *buffer;
   buffer = malloc(sizeof(char) * 256);
@@ -287,14 +304,14 @@ bool recv_file(int sockfd, char *filename){
       bytes_received = read(sockfd, buffer, remaining_bytes);
     }
 
-    else {      
+    else {
       bytes_received = read(sockfd, buffer, 256);
     }
 
     if(bytes_received > 0){
       fwrite(buffer, 1, bytes_received, file);
     }
-  
+
     if(bytes_received < 0){
       printf("Error reading file.");
       break;
@@ -322,9 +339,9 @@ bool recv_file(int sockfd, char *filename){
 
 void list(char *response){
   printf("Here are the list of files:\n");
-  printf("----------------------------------------------\n"); 
+  printf("----------------------------------------------\n");
   printf("%s", response);
-  printf("----------------------------------------------\n");  
+  printf("----------------------------------------------\n");
 }
 
 void delete(int sockfd, char *response){
@@ -383,7 +400,7 @@ void upload(int sockfd, char *response){
   }
 }
 
-void download(int sockfd, char *response){  
+void download(int sockfd, char *response){
   char path[] = "client_files/";
   if(strcmp(response, "ready_download") == 0){
     printf("What file do you want to download?\n");
