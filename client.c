@@ -28,6 +28,30 @@ void run_bitdrive(int sockfd);
 void start_client(char *server, int port);
 void error_occurred(const char *msg);
 
+static inline void loadBar(int x, int n, int r, int w)
+{
+    // Only update r times.
+    if ( x % (n/r +1) != 0 ) return;
+
+    // Calculuate the ratio of complete-to-incomplete.
+    float ratio = x/(float)n;
+    int   c     = ratio * w;
+
+    // Show the percentage complete.
+    printf("%3d%% [", (int)(ratio*100) );
+
+    // Show the load bar.
+    for (x=0; x<c; x++) {
+       printf("=");
+    }
+
+    for (x=c; x<w; x++) {
+       printf(" ");
+    }
+
+    printf("]\n\033[F\033[J");
+}
+
 int main(int argc, char* argv[]){
   if(argc < 3) {
     printf("Usage: %s <ip of server> <port>", argv[0]);
@@ -238,7 +262,7 @@ bool send_file(int sockfd, char *filename){
   write(sockfd, buffer, 256);
   fseek(file, 0L, SEEK_SET);
 
-  printf("[");
+  int count = 0;
   while(true){
     bzero(buffer, 256);
     bytes_read = fread(buffer, 1, 256, file);
@@ -250,7 +274,8 @@ bool send_file(int sockfd, char *filename){
       if((curr_percentage > 0) && (curr_percentage > curr_value)) {
         if((curr_percentage % 10) == 0) {
           curr_value = curr_percentage;
-          printf("===");
+          loadBar(count, 10, 100, 100);
+          count++;
         }
       }
 
@@ -259,8 +284,8 @@ bool send_file(int sockfd, char *filename){
 
     if(bytes_read < 256){
       if(feof(file)){
-        printf("] 100%%");
-        printf("\nUpload done!\n");
+        loadBar(count, 10, 100, 100);
+        printf("\n 100%% Upload done!\n");
         free(buffer);
         fclose(file);
         return true;
@@ -294,21 +319,32 @@ bool recv_file(int sockfd, char *filename){
   int size = atoi(buffer);
   int sum_bytes_received = 0;
   int remaining_bytes = 0;
+  int curr_percentage = 0;
+  int curr_value = 0;
+  int count = 0;
 
   while(sum_bytes_received < size) {
     bzero(buffer, 256);
     sum_bytes_received += bytes_received;
     remaining_bytes = size - sum_bytes_received;
+    curr_percentage = (((double)sum_bytes_received)/((double)size))*100;
 
     if(remaining_bytes < 256){
       bytes_received = read(sockfd, buffer, remaining_bytes);
     }
-
     else {
       bytes_received = read(sockfd, buffer, 256);
     }
 
     if(bytes_received > 0){
+      if((curr_percentage > 0) && (curr_percentage > curr_value)) {
+        if((curr_percentage % 10) == 0) {
+          curr_value = curr_percentage;
+          loadBar(count, 10, 100, 100);
+          count++;
+        }
+      }
+
       fwrite(buffer, 1, bytes_received, file);
     }
 
@@ -325,10 +361,10 @@ bool recv_file(int sockfd, char *filename){
   free(buffer);
   int status = fclose(file);
   if(status == 0) {
-    printf("File received!\n");
+    loadBar(count, 10, 100, 100);
+    printf("\n100%% Download complete!\n");
     return true;
   }
-
   else {
     printf("ERROR: File not closed.\n");
   }
@@ -387,7 +423,6 @@ void upload(int sockfd, char *response){
         printf("File not uploaded.\n");
       }
     }
-
     else {
       printf("Server is not yet ready. Try again.\n");
     }
