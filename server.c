@@ -341,11 +341,11 @@ void download(int clientfd, char *request){
 
   // ready to send
   write_response(clientfd, "ready_to_send");
-  printf("Client %d:%s\n", clientfd, "ready_to_send");
+  printf("Client %d: %s\n", clientfd, "ready_to_send");
 
   bzero(request, 256);
   request = read_request(clientfd, request);
-  printf("Client %d:%s\n", clientfd, request);
+  printf("Client %d: %s\n", clientfd, request);
 
   if(strcmp(request, "ready_to_receive") == 0){
     send_file(clientfd, path);

@@ -43,7 +43,7 @@ int main(int argc, char* argv[]){
 void start_client(char *server, int port){
   struct sockaddr_in server_addr;
   struct hostent *host_addr;
-  int sockfd, status;
+  int sockfd, status, n;
 
   set_sockaddr(&server_addr, htons(port));
 
@@ -97,7 +97,7 @@ void send_request(int sockfd, char *buffer){
   int status = write(sockfd, buffer, strlen(buffer));
   if(status < 0) {
     error_occurred("ERROR writing to socket");
-  }
+  }  
 }
 
 char *recv_response(int sockfd, char *response){
@@ -106,7 +106,7 @@ char *recv_response(int sockfd, char *response){
     error_occurred("ERROR reading from socket");
   }
 
-  return response;
+  return response;  
 }
 
 void display_welcome(){
@@ -117,7 +117,7 @@ void display_welcome(){
 
 void display_commands(){
   printf("\nCommands:\n");
-  printf("==================================================================\n");
+  printf("==================================================================\n");  
   printf("[L] LIST: List the names of the files currently stored in the server.\n");
   printf("[U] UPLOAD: Upload a file to the server.\n");
   printf("[D] DOWNLOAD: Download a file from the server.\n");
@@ -140,7 +140,7 @@ void run_bitdrive(int sockfd){
     printf("\nWhat would you like to do?\n");
     command = get_command();
     is_running = send_command(command, sockfd);
-  }
+  }    
 
   return;
 }
@@ -148,6 +148,7 @@ void run_bitdrive(int sockfd){
 char *process_command(char command, int sockfd){
   char *buffer;
   char *response;
+  int status;
 
   response = malloc(sizeof(char) * 256);
   bzero(response, 256);
@@ -174,7 +175,7 @@ char *process_command(char command, int sockfd){
 
   if(command == 'L' || command == 'U' || command == 'D' || command == 'X' || command == 'Q'){
     send_request(sockfd, buffer);
-    return recv_response(sockfd, response);
+    return recv_response(sockfd, response);    
   }
 
   free(response);
@@ -207,7 +208,7 @@ bool send_command(char command, int sockfd){
     default:
       printf("Invalid command.\n");
       break;
-  }
+  }  
 
   if(command == 'Q' && strcmp(response, "Disconnecting...") == 0){
     free(response);
@@ -222,7 +223,7 @@ bool send_command(char command, int sockfd){
 bool send_file(int sockfd, char *filename){
   FILE *file;
   file = fopen(filename, "rb");
-
+  
   int bytes_read = 0;
   char *buffer = malloc(sizeof(char) * 256);
   bzero(buffer, 256);
@@ -266,7 +267,7 @@ bool send_file(int sockfd, char *filename){
 bool recv_file(int sockfd, char *filename){
   FILE *file;
   file = fopen(filename, "w+");
-
+  
   int bytes_received = 0;
   char *buffer;
   buffer = malloc(sizeof(char) * 256);
@@ -290,14 +291,14 @@ bool recv_file(int sockfd, char *filename){
       bytes_received = read(sockfd, buffer, remaining_bytes);
     }
 
-    else {
+    else {      
       bytes_received = read(sockfd, buffer, 256);
     }
 
     if(bytes_received > 0){
       fwrite(buffer, 1, bytes_received, file);
     }
-
+  
     if(bytes_received < 0){
       printf("Error reading file.");
       break;
@@ -325,9 +326,9 @@ bool recv_file(int sockfd, char *filename){
 
 void list(char *response){
   printf("Here are the list of files:\n");
-  printf("----------------------------------------------\n");
+  printf("----------------------------------------------\n"); 
   printf("%s", response);
-  printf("----------------------------------------------\n");
+  printf("----------------------------------------------\n");  
 }
 
 void delete(int sockfd, char *response){
@@ -388,7 +389,7 @@ void upload(int sockfd, char *response){
   }
 }
 
-void download(int sockfd, char *response){
+void download(int sockfd, char *response){  
   char path[] = "client_files/";
   if(strcmp(response, "ready_download") == 0){
     printf("What file do you want to download?\n");
