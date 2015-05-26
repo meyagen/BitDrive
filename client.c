@@ -15,7 +15,7 @@ void send_request(int sockfd, char *buffer);
 char *recv_response(int sockfd, char *response);
 char *process_command(char *command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
-void list(char *response);
+void list(int sockfd, char *response);
 void delete(int sockfd, char *response);
 void download(int sockfd, char *response);
 char *send_filename(char *filename, char *response);
@@ -202,7 +202,7 @@ bool send_command(char *command, int sockfd){
   response = process_command(command, sockfd);
 
     if(strcmp("L", command) == 0){
-      list(response);
+      list(sockfd, response);
     }
 
     else if(strcmp("U", command) == 0){
@@ -373,10 +373,17 @@ bool recv_file(int sockfd, char *filename){
   return false;
 }
 
-void list(char *response){
-  printf("Here are the list of files:\n");
+void list(int sockfd, char *response){
+  printf("Files found: %s\n", response);
+  if(strcmp(response, "0") == 0){
+    return;
+  }
+
+  send_request(sockfd, "file_count_received");
+  printf("Receiving files list...\n");
+
   printf("----------------------------------------------\n");
-  printf("%s", response);
+  printf("%s", recv_response(sockfd, response));
   printf("----------------------------------------------\n");
 }
 

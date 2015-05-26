@@ -137,16 +137,6 @@ void error_occurred(const char *msg){
   exit(1);
 }
 
-char *read_request(int sockfd, char *buffer){
-  bzero(buffer, 1024);
-  int status = read(sockfd, buffer, 1024);
-  if(status < 0) {
-    error_occurred("ERROR reading from socket");
-  }
-
-  return buffer;
-}
-
 void *recv_file(int clientfd, char *filename){
   char path[] = "server_files/";
   FILE *file;
@@ -255,6 +245,16 @@ void write_response(int clientfd, char *response){
   if(status < 0) {
     error_occurred("ERROR writing to socket");
   }
+}
+
+char *read_request(int sockfd, char *buffer){
+  bzero(buffer, 1024);
+  int status = read(sockfd, buffer, 1024);
+  if(status < 0) {
+    error_occurred("ERROR reading from socket");
+  }
+
+  return buffer;
 }
 
 void *communicate(void *newsockfd){
@@ -450,7 +450,7 @@ void list(struct File *root, int clientfd){
   // check if list of files is empty first
   if(current->filename == NULL){
     printf("No files found.\n");
-    write_response(clientfd, "(No files found in the server.)\n");    
+    write_response(clientfd, "0");    
     free_list(root);
     return;
   }
@@ -463,6 +463,23 @@ void list(struct File *root, int clientfd){
   }
 
   char *list_string = malloc(size + (20*file_counter) + file_counter);
+  char *buffer = malloc(sizeof(char) * 1024);
+  sprintf(buffer, "%d", file_counter);
+  write_response(clientfd, buffer);
+  printf("Files found: %s\n", buffer);
+
+  bzero(buffer, 1024);
+  read(clientfd, buffer, 1024);
+  printf("%s\n", buffer);
+
+  if(strcmp(buffer, "file_count_received") != 0){
+    printf("Client not ready. Aborting command.\n");
+    free(buffer);
+    free(list_string);
+  }
+  
+  free(buffer);
+
   strcpy(list_string, "\0");
   current = root;
   while (current != NULL){
