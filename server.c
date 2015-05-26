@@ -138,12 +138,10 @@ void error_occurred(const char *msg){
 }
 
 void *recv_file(int clientfd, char *filename){
-  // char path[] = "server_files/";
   char *path = malloc(sizeof(char) * 13 + sizeof(filename));
   strcpy(path, "server_files/");
   FILE *file;
   file = fopen(strcat(path, filename), "w+");
-  // file = fopen(filename, "w+");
 
   int bytes_received = 0;
   char *buffer;
@@ -306,7 +304,6 @@ void upload(int clientfd, char *request){
 }
 
 void download(int clientfd, char *request){
-  // char path[] = "server_files/";
   printf("Client %d: %s\n", clientfd, "ready_download");
   write_response(clientfd, "ready_download");
 
@@ -464,7 +461,7 @@ void list(struct File *root, int clientfd){
   // check if list of files is empty first
   if(current->filename == NULL){
     printf("No files found.\n");
-    write_response(clientfd, "0");    
+    write_response(clientfd, "0");
     free_list(root);
     return;
   }
@@ -491,7 +488,7 @@ void list(struct File *root, int clientfd){
     free(buffer);
     free(list_string);
   }
-  
+
   free(buffer);
 
   strcpy(list_string, "\0");

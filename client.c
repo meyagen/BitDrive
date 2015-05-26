@@ -405,8 +405,6 @@ void upload(int sockfd, char *response){
   if(strcmp(response, "ready_upload") == 0){
     printf("What file do you want to upload?\n");
     char *filename = get_input();
-
-    // char path[] = "client_files/";
     char *path = malloc(sizeof(char)*2 + sizeof(filename));
     strcpy(path, "./");
     strcat(path, filename);
@@ -443,15 +441,10 @@ void upload(int sockfd, char *response){
 }
 
 void download(int sockfd, char *response){
-  // char path[] = "client_files/";
   if(strcmp(response, "ready_download") == 0){
     printf("What file do you want to download?\n");
     char *filename = get_input();
     send_request(sockfd, filename);
-    // char *path = malloc(sizeof(char)*2 + sizeof(filename));
-    // strcpy(path, "./");
-
-    // strcat(path, filename);
     recv_response(sockfd, response);
 
     if(strcmp(response, "filename_error") == 0){
