@@ -15,7 +15,7 @@ void send_request(int sockfd, char *buffer);
 char *recv_response(int sockfd, char *response);
 char *process_command(char *command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
-void list(char *response);
+void list(int sockfd, char *response);
 void delete(int sockfd, char *response);
 void download(int sockfd, char *response);
 char *send_filename(char *filename, char *response);
@@ -28,8 +28,7 @@ void run_bitdrive(int sockfd);
 void start_client(char *server, int port);
 void error_occurred(const char *msg);
 
-static inline void load_bar(int x, int n, int r, int w)
-{
+static inline void load_bar(int x, int n, int r, int w){
     // Only update r times.
     if ( x % (n/r +1) != 0 ) return;
 
@@ -202,7 +201,7 @@ bool send_command(char *command, int sockfd){
   response = process_command(command, sockfd);
 
     if(strcmp("L", command) == 0){
-      list(response);
+      list(sockfd, response);
     }
 
     else if(strcmp("U", command) == 0){
@@ -285,7 +284,7 @@ bool send_file(int sockfd, char *filename){
     if(bytes_read < 256){
       if(feof(file)){
         load_bar(count, 10, 100, 100);
-        printf("\n 100%% Upload done!\n");
+        printf("\n100%% Upload done!\n");
         free(buffer);
         fclose(file);
         return true;
@@ -373,10 +372,17 @@ bool recv_file(int sockfd, char *filename){
   return false;
 }
 
-void list(char *response){
-  printf("Here are the list of files:\n");
+void list(int sockfd, char *response){
+  printf("Files found: %s\n", response);
+  if(strcmp(response, "0") == 0){
+    return;
+  }
+
+  send_request(sockfd, "file_count_received");
+  // printf("Receiving files list...\n");
+
   printf("----------------------------------------------\n");
-  printf("%s", response);
+  printf("%s", recv_response(sockfd, response));
   printf("----------------------------------------------\n");
 }
 
@@ -403,7 +409,9 @@ void upload(int sockfd, char *response){
     printf("What file do you want to upload?\n");
     char *filename = get_input();
 
-    char path[] = "client_files/";
+    // char path[] = "client_files/";
+    char *path = malloc(sizeof(char)*2 + sizeof(filename));
+    strcpy(path, "./");
     strcat(path, filename);
 
     FILE *file = fopen(path, "r");
@@ -427,21 +435,26 @@ void upload(int sockfd, char *response){
       printf("Server is not yet ready. Try again.\n");
     }
 
+    free(path);
     free(filename);
   }
 
   else {
     printf("Server is not yet ready. Try again.\n");
   }
+
 }
 
 void download(int sockfd, char *response){
-  char path[] = "client_files/";
+  // char path[] = "client_files/";
   if(strcmp(response, "ready_download") == 0){
     printf("What file do you want to download?\n");
     char *filename = get_input();
     send_request(sockfd, filename);
-    strcat(path, filename);
+    char *path = malloc(sizeof(char)*2 + sizeof(filename));
+    // strcpy(path, "./");
+
+    // strcat(path, filename);
     recv_response(sockfd, response);
 
     if(strcmp(response, "filename_error") == 0){
@@ -457,6 +470,7 @@ void download(int sockfd, char *response){
       }
     }
 
+    free(path);
     free(filename);
   }
 
