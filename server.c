@@ -14,7 +14,7 @@ const int NUM_CLIENTS = 2;
 int client_number;
 struct File{
   char *filename;
-  long long size;
+  float size;
   struct File *next;
 };
 
@@ -426,7 +426,7 @@ struct File* create_list(){
         stat(file_path, &file_stats);
 
         current->filename = filename;
-        current->size = (long long)file_stats.st_size;
+        current->size = (float)(file_stats.st_size/1000.0);
         free(file_path);
       }
     }
@@ -445,7 +445,7 @@ struct File* create_list(){
 void list(struct File *root, int clientfd){
   struct File *current;
   current = root;
-  long long size = 0;
+  float size = 0;
   int file_counter = 0;
 
   // check if list of files is empty first
@@ -485,13 +485,13 @@ void list(struct File *root, int clientfd){
   current = root;
   while (current != NULL){
     //convert current->size to string
-    char *file_size = malloc(sizeof(long long unsigned) * current->size);
-    sprintf(file_size, "%llu", current->size);
+    char *file_size = malloc(sizeof(float) * current->size);
+    sprintf(file_size, "%.1f", current->size);
 
     strcat(list_string, current->filename);
     strcat(list_string, " (");
     strcat(list_string, file_size);
-    strcat(list_string, " bytes)\n");
+    strcat(list_string, " kb)\n");
     current = current->next;
     free(file_size);
   }
