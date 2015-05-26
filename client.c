@@ -336,11 +336,9 @@ bool recv_file(int sockfd, char *filename){
 
     if(bytes_received > 0){
       if((curr_percentage > 0) && (curr_percentage > curr_value)) {
-        if((curr_percentage % 10) == 0) {
-          curr_value = curr_percentage;
-          load_bar(count, 100, 20, 100);
-          count++;
-        }
+        curr_value = curr_percentage;
+        load_bar(count, 100, 20, 100);
+        count++;
       }
 
       fwrite(buffer, 1, bytes_received, file);
