@@ -138,9 +138,10 @@ void error_occurred(const char *msg){
 }
 
 void *recv_file(int clientfd, char *filename){
-  char path[] = "server_files/";
+  // char path[] = "server_files/";
   FILE *file;
-  file = fopen(strcat(path, filename), "w+");
+  // file = fopen(strcat(path, filename), "w+");
+  file = fopen(filename, "w+");
 
   int bytes_received = 0;
   char *buffer;
@@ -303,15 +304,15 @@ void upload(int clientfd, char *request){
 }
 
 void download(int clientfd, char *request){
-  char path[] = "server_files/";
+  // char path[] = "server_files/";
   printf("Client %d: %s\n", clientfd, "ready_download");
   write_response(clientfd, "ready_download");
 
   // get filename
   request = read_request(clientfd, request);
 
-  strcat(path, request);
-  FILE *file = fopen(path, "r");
+  // strcat(path, request);
+  FILE *file = fopen(request, "r");
   if(file == NULL){
     printf("File does not exist. Aborting download.\n");
     write_response(clientfd, "filename_error");
@@ -329,7 +330,7 @@ void download(int clientfd, char *request){
   printf("Client %d: %s\n", clientfd, request);
 
   if(strcmp(request, "ready_to_receive") == 0){
-    send_file(clientfd, path);
+    send_file(clientfd, request);
   }
 
   else {
@@ -339,7 +340,7 @@ void download(int clientfd, char *request){
 
 void delete(int clientfd, char *request){
   char *response = "ready_delete";
-  char *path = "server_files/";
+  // char *path = "server_files/";
   write_response(clientfd, response);
 
   // get file to delete
@@ -347,11 +348,12 @@ void delete(int clientfd, char *request){
   printf("Client %d: %s\n", clientfd, request);
 
   // delete file
-  char *file_path = malloc(strlen(path) + strlen(request) + 1);
-  strcpy(file_path, path);
-  strcat(file_path, request);
+  // char *file_path = malloc(strlen(path) + strlen(request) + 1);
+  // strcpy(file_path, path);
+  // strcat(file_path, request);
 
-  if(remove(file_path) == 0){
+  // if(remove(file_path) == 0){
+  if(remove(request) == 0){
     response = "delete_success";
   }
 
@@ -359,7 +361,7 @@ void delete(int clientfd, char *request){
     response = "delete_error";
   }
 
-  free(file_path);
+  // free(file_path);
   write_response(clientfd, response);
 }
 
@@ -392,8 +394,10 @@ void free_list(struct File* head){
 struct File* create_list(){
   struct stat file_stats;
   struct File *root;
-  char *directory = "server_files";
-  char *path = "server_files/";
+  // char *directory = "server_files";
+  // char *path = "server_files/";
+  char *directory = ".";
+  char *path = "./";
   root = (struct File *)malloc(sizeof(struct File));
   root->next = NULL;
   root->filename = NULL;

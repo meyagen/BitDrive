@@ -410,10 +410,10 @@ void upload(int sockfd, char *response){
     printf("What file do you want to upload?\n");
     char *filename = get_input();
 
-    char path[] = "client_files/";
-    strcat(path, filename);
+    // char path[] = "client_files/";
+    // strcat(path, filename);
 
-    FILE *file = fopen(path, "r");
+    FILE *file = fopen(filename, "r");
     if(file == NULL){
       free(filename);
       send_request(sockfd, "filename_error");
@@ -426,7 +426,7 @@ void upload(int sockfd, char *response){
     recv_response(sockfd, response);
 
     if(strcmp(response, "ready_filename") == 0){
-      if(send_file(sockfd, path) == false){
+      if(send_file(sockfd, filename) == false){
         printf("File not uploaded.\n");
       }
     }
@@ -443,12 +443,12 @@ void upload(int sockfd, char *response){
 }
 
 void download(int sockfd, char *response){
-  char path[] = "client_files/";
+  // char path[] = "client_files/";
   if(strcmp(response, "ready_download") == 0){
     printf("What file do you want to download?\n");
     char *filename = get_input();
     send_request(sockfd, filename);
-    strcat(path, filename);
+    // strcat(path, filename);
     recv_response(sockfd, response);
 
     if(strcmp(response, "filename_error") == 0){
@@ -459,7 +459,7 @@ void download(int sockfd, char *response){
 
     else if(strcmp(response, "ready_to_send") == 0){
       send_request(sockfd, "ready_to_receive");
-      if(recv_file(sockfd, path) == false){
+      if(recv_file(sockfd, filename) == false){
         printf("File not downloaded. Try again\n");
       }
     }
