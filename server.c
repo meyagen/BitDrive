@@ -315,7 +315,7 @@ void download(int clientfd, char *request){
   char *path = malloc(sizeof(char) * 13 + sizeof(request));
   strcpy(path, "server_files/");
   strcat(path, request);
-  
+
   // strcat(path, request);
   FILE *file = fopen(path, "r");
   if(file == NULL){
@@ -335,7 +335,7 @@ void download(int clientfd, char *request){
   printf("Client %d: %s\n", clientfd, request);
 
   if(strcmp(request, "ready_to_receive") == 0){
-    send_file(clientfd, request);
+    send_file(clientfd, path);
   }
 
   else {

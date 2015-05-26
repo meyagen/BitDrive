@@ -303,6 +303,7 @@ bool send_file(int sockfd, char *filename){
 
 bool recv_file(int sockfd, char *filename){
   FILE *file;
+  printf("%s\n", filename);
   file = fopen(filename, "w+");
 
   int bytes_received = 0;
@@ -451,7 +452,7 @@ void download(int sockfd, char *response){
     printf("What file do you want to download?\n");
     char *filename = get_input();
     send_request(sockfd, filename);
-    char *path = malloc(sizeof(char)*2 + sizeof(filename));
+    // char *path = malloc(sizeof(char)*2 + sizeof(filename));
     // strcpy(path, "./");
 
     // strcat(path, filename);
@@ -465,12 +466,12 @@ void download(int sockfd, char *response){
 
     else if(strcmp(response, "ready_to_send") == 0){
       send_request(sockfd, "ready_to_receive");
-      if(recv_file(sockfd, path) == false){
+      if(recv_file(sockfd, filename) == false){
         printf("File not downloaded. Try again\n");
       }
     }
 
-    free(path);
+    // free(path);
     free(filename);
   }
 
