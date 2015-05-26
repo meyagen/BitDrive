@@ -15,7 +15,7 @@ void send_request(int sockfd, char *buffer);
 char *recv_response(int sockfd, char *response);
 char *process_command(char *command, int sockfd);
 void set_sockaddr(struct sockaddr_in *socket_addr, int port);
-void list(int sockfd, char *response);
+void list(char *response);
 void delete(int sockfd, char *response);
 void download(int sockfd, char *response);
 char *send_filename(char *filename, char *response);
@@ -28,7 +28,7 @@ void run_bitdrive(int sockfd);
 void start_client(char *server, int port);
 void error_occurred(const char *msg);
 
-static inline void loadBar(int x, int n, int r, int w)
+static inline void load_bar(int x, int n, int r, int w)
 {
     // Only update r times.
     if ( x % (n/r +1) != 0 ) return;
@@ -202,7 +202,7 @@ bool send_command(char *command, int sockfd){
   response = process_command(command, sockfd);
 
     if(strcmp("L", command) == 0){
-      list(sockfd, response);
+      list(response);
     }
 
     else if(strcmp("U", command) == 0){
@@ -274,7 +274,7 @@ bool send_file(int sockfd, char *filename){
       if((curr_percentage > 0) && (curr_percentage > curr_value)) {
         if((curr_percentage % 10) == 0) {
           curr_value = curr_percentage;
-          loadBar(count, 10, 100, 100);
+          load_bar(count, 10, 100, 100);
           count++;
         }
       }
@@ -284,7 +284,7 @@ bool send_file(int sockfd, char *filename){
 
     if(bytes_read < 256){
       if(feof(file)){
-        loadBar(count, 10, 100, 100);
+        load_bar(count, 10, 100, 100);
         printf("\n 100%% Upload done!\n");
         free(buffer);
         fclose(file);
@@ -340,7 +340,7 @@ bool recv_file(int sockfd, char *filename){
       if((curr_percentage > 0) && (curr_percentage > curr_value)) {
         if((curr_percentage % 10) == 0) {
           curr_value = curr_percentage;
-          loadBar(count, 10, 100, 100);
+          load_bar(count, 10, 100, 100);
           count++;
         }
       }
@@ -361,7 +361,7 @@ bool recv_file(int sockfd, char *filename){
   free(buffer);
   int status = fclose(file);
   if(status == 0) {
-    loadBar(count, 10, 100, 100);
+    load_bar(count, 10, 100, 100);
     printf("\n100%% Download complete!\n");
     return true;
   }
@@ -373,17 +373,10 @@ bool recv_file(int sockfd, char *filename){
   return false;
 }
 
-void list(int sockfd, char *response){
-  printf("Files found: %s\n", response);
-  if(strcmp(response, "0") == 0){
-    return;
-  }
-
-  send_request(sockfd, "file_count_received");
-  printf("Receiving files list...\n");
-
+void list(char *response){
+  printf("Here are the list of files:\n");
   printf("----------------------------------------------\n");
-  printf("%s", recv_response(sockfd, response));
+  printf("%s", response);
   printf("----------------------------------------------\n");
 }
 
@@ -410,10 +403,10 @@ void upload(int sockfd, char *response){
     printf("What file do you want to upload?\n");
     char *filename = get_input();
 
-    // char path[] = "client_files/";
-    // strcat(path, filename);
+    char path[] = "client_files/";
+    strcat(path, filename);
 
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen(path, "r");
     if(file == NULL){
       free(filename);
       send_request(sockfd, "filename_error");
@@ -426,7 +419,7 @@ void upload(int sockfd, char *response){
     recv_response(sockfd, response);
 
     if(strcmp(response, "ready_filename") == 0){
-      if(send_file(sockfd, filename) == false){
+      if(send_file(sockfd, path) == false){
         printf("File not uploaded.\n");
       }
     }
@@ -443,12 +436,12 @@ void upload(int sockfd, char *response){
 }
 
 void download(int sockfd, char *response){
-  // char path[] = "client_files/";
+  char path[] = "client_files/";
   if(strcmp(response, "ready_download") == 0){
     printf("What file do you want to download?\n");
     char *filename = get_input();
     send_request(sockfd, filename);
-    // strcat(path, filename);
+    strcat(path, filename);
     recv_response(sockfd, response);
 
     if(strcmp(response, "filename_error") == 0){
@@ -459,7 +452,7 @@ void download(int sockfd, char *response){
 
     else if(strcmp(response, "ready_to_send") == 0){
       send_request(sockfd, "ready_to_receive");
-      if(recv_file(sockfd, filename) == false){
+      if(recv_file(sockfd, path) == false){
         printf("File not downloaded. Try again\n");
       }
     }
