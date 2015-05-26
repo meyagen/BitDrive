@@ -271,11 +271,9 @@ bool send_file(int sockfd, char *filename){
       curr_percentage = (((double)bytes_written)/((double)size))*100;
 
       if((curr_percentage > 0) && (curr_percentage > curr_value)) {
-        if((curr_percentage % 10) == 0) {
-          curr_value = curr_percentage;
-          load_bar(count, 10, 100, 100);
-          count++;
-        }
+        curr_value = curr_percentage;
+        load_bar(count, 100, 20, 100);
+        count++;
       }
 
       write(sockfd, buffer, bytes_read);
@@ -283,7 +281,7 @@ bool send_file(int sockfd, char *filename){
 
     if(bytes_read < 256){
       if(feof(file)){
-        load_bar(count, 10, 100, 100);
+        load_bar(count, 100, 20, 100);
         printf("\n100%% Upload done!\n");
         free(buffer);
         fclose(file);
@@ -340,7 +338,7 @@ bool recv_file(int sockfd, char *filename){
       if((curr_percentage > 0) && (curr_percentage > curr_value)) {
         if((curr_percentage % 10) == 0) {
           curr_value = curr_percentage;
-          load_bar(count, 10, 100, 100);
+          load_bar(count, 100, 20, 100);
           count++;
         }
       }
@@ -361,7 +359,7 @@ bool recv_file(int sockfd, char *filename){
   free(buffer);
   int status = fclose(file);
   if(status == 0) {
-    load_bar(count, 10, 100, 100);
+    load_bar(count, 100, 20, 100);
     printf("\n100%% Download complete!\n");
     return true;
   }
