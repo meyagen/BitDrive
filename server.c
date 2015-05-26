@@ -93,9 +93,6 @@ void start_server(int port){
       client_number++;
     }
   }
-
-  // close(sockfd);
-  // printf("Closing sockets...");
 }
 
 void process_request(char *request, int clientfd){
@@ -265,8 +262,6 @@ void *communicate(void *newsockfd){
   char *buffer = malloc(sizeof(char) * 1024);
   bzero(buffer, 1024);
 
-  // write_response(sockfd, "connected");
-
   while(server_run) {
     buffer = read_request(sockfd, buffer);
     process_request(buffer, sockfd);
@@ -313,7 +308,6 @@ void download(int clientfd, char *request){
   strcpy(path, "server_files/");
   strcat(path, request);
 
-  // strcat(path, request);
   FILE *file = fopen(path, "r");
   if(file == NULL){
     printf("File does not exist. Aborting download.\n");
@@ -344,7 +338,6 @@ void download(int clientfd, char *request){
 
 void delete(int clientfd, char *request){
   char *response = "ready_delete";
-  // char *path = "server_files/";
   char *path = malloc(sizeof(char) * 13);
   strcpy(path, "server_files/");
   write_response(clientfd, response);
@@ -359,7 +352,6 @@ void delete(int clientfd, char *request){
   strcat(file_path, request);
 
   if(remove(file_path) == 0){
-  // if(remove(request) == 0){
     response = "delete_success";
   }
 
@@ -403,8 +395,7 @@ struct File* create_list(){
   struct File *root;
   char *directory = "server_files";
   char *path = "server_files/";
-  // char *directory = ".";
-  // char *path = "./";
+
   root = (struct File *)malloc(sizeof(struct File));
   root->next = NULL;
   root->filename = NULL;
@@ -448,7 +439,6 @@ struct File* create_list(){
   }
 
   free(ent);
-  // free(dir);
   return root;
 }
 
